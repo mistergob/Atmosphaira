@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ECLIPTICA</title>
+
+  <!-- Polices -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      /* ATMOS design tokens */
+      --primary:#00eaff;       /* cyan néon */
+      --accent:#8a2be2;        /* violet néon */
+      --text:#e6f7ff;
+      --muted:#9fb3c8;
+      --bg-a:#05060d;
+      --bg-b:#0b1430;
+      --bg-c:#00182a;
+      --ring: drop-shadow(0 0 8px rgba(0,234,255,.55)) drop-shadow(0 0 18px rgba(138,43,226,.35));
+      --month: 8.333333%;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:"Outfit", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 80% -10%, rgba(0,234,255,.08), transparent 60%),
+                  radial-gradient(900px 700px at -10% 30%, rgba(138,43,226,.08), transparent 50%),
+                  linear-gradient(180deg, var(--bg-a), var(--bg-b) 40%, var(--bg-c));
+      background-attachment: fixed;
+      overflow-x:hidden;
+    }
+
+    .stars, .stars::before, .stars::after{
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background-image: radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,.7) 40%, transparent 42%),
+                        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,.5) 40%, transparent 42%),
+                        radial-gradient(1.5px 1.5px at 80% 20%, rgba(255,255,255,.5) 40%, transparent 42%),
+                        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,.5) 40%, transparent 42%);
+      opacity:.3; filter:blur(.2px);
+    }
+    .stars::before{content:""; animation: twinkle 8s linear infinite; opacity:.25}
+    .stars::after {content:""; animation: twinkle 13s linear infinite reverse; opacity:.25}
+    @keyframes twinkle{0%{transform:translateY(0)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+
+    header.hero{ position:relative; z-index:1; padding:48px 20px 24px; text-align:center; }
+    .brand{font-family:"Orbitron", sans-serif; letter-spacing:.06em; font-weight:800; font-size:14px; color:var(--muted); text-transform:uppercase}
+    h1{ margin:.25rem auto .5rem; max-width:900px; font-family:"Orbitron", sans-serif; font-size:clamp(28px, 4.6vw, 54px); font-weight:900; line-height:1.02; text-shadow:0 0 6px rgba(0,234,255,.35), 0 0 18px rgba(138,43,226,.25); }
+    h1 .grad{background:linear-gradient(92deg, var(--primary), var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+    .lead{max-width:840px; margin:0 auto; color:var(--muted)}
+
+    .controls{
+      position:sticky; top:0; z-index:3;
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-start;
+      padding:12px 16px; margin:20px auto 0; backdrop-filter:blur(8px);
+      background:linear-gradient(180deg, rgba(5,6,13,.72), rgba(5,6,13,.35));
+      border:1px solid rgba(255,255,255,.06); border-radius:16px; width:min(1100px, 92%);
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+
+    /* Chips (filtres par cercle principal) */
+    .chips{display:flex; flex-wrap:wrap; gap:10px}
+    .chip{ --o:.35; display:inline-flex; align-items:center; gap:.5ch; cursor:pointer; user-select:none;
+      padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.08);
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      color:var(--text); font-size:14px; transition:.2s ease; filter:var(--ring);
+    }
+    .chip[data-active="true"]{ border-color:rgba(0,234,255,.55); box-shadow:0 0 0 2px rgba(0,234,255,.12) inset }
+    .chip .dot{width:8px; height:8px; border-radius:50%; background:var(--primary); box-shadow:0 0 10px currentColor}
+
+    .spacer{flex:1 1 12px}
+
+    .action-btn{
+      display:inline-flex; align-items:center; gap:10px; cursor:pointer; font-weight:600;
+      padding:10px 18px; border-radius:12px; border:1px solid rgba(0,234,255,.45);
+      background:linear-gradient(180deg, rgba(0,234,255,.18), rgba(0,234,255,.05)); color:var(--text);
+      text-transform:uppercase; letter-spacing:.05em; font-size:12px; filter:var(--ring);
+      transition:transform .2s ease, border-color .2s ease;
+    }
+    .action-btn:hover{transform:translateY(-1px); border-color:rgba(138,43,226,.55)}
+    .action-btn .ic{font-size:16px}
+
+    .months{display:flex; gap:6px; flex-wrap:wrap}
+    .months button{all:unset; cursor:pointer; padding:8px 10px; font-size:12px; color:var(--muted); border-radius:10px; border:1px solid rgba(255,255,255,.08)}
+    .months button:hover{color:var(--text); border-color:rgba(255,255,255,.16)}
+
+    .meter{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:12px}
+    .bar{position:relative; width:160px; height:7px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden}
+    .bar>i{position:absolute; inset:0; width:var(--p,0%); background:linear-gradient(90deg, var(--primary), var(--accent)); box-shadow:0 0 18px rgba(0,234,255,.35)}
+
+    .view{display:flex; gap:10px; border-left:1px solid rgba(255,255,255,.08); padding-left:10px}
+
+    .wrap{position:relative; z-index:1; width:min(1200px, 92%); margin:28px auto 80px}
+
+    /* Vues */
+    body.view-vertical #timelineVertical{display:block}
+    body.view-vertical #roadmapHoriz{display:none}
+    body.view-roadmap #timelineVertical{display:none}
+    body.view-roadmap #roadmapHoriz{display:block}
+
+    .timeline{ position:relative; padding:40px 0; margin:0 auto; }
+    .timeline::before{ content:""; position:absolute; left:50%; top:0; bottom:0; width:4px; transform:translateX(-50%);
+      background:linear-gradient(180deg, rgba(0,234,255,.0), rgba(0,234,255,.7) 15%, rgba(138,43,226,.7) 85%, rgba(138,43,226,.0));
+      filter:drop-shadow(0 0 10px rgba(0,234,255,.35)); }
+
+    .month{ position:relative; margin:36px 0 16px; scroll-margin-top:90px; }
+    .month h2{ display:inline-flex; align-items:center; gap:10px; font-family:"Orbitron", sans-serif; font-weight:800;
+      font-size:18px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:999px; padding:6px 12px; }
+    .month.is-today h2{color:var(--text); border-color:rgba(0,234,255,.35); box-shadow:0 0 0 2px rgba(0,234,255,.15) inset}
+
+    .item{position:relative; display:grid; grid-template-columns: 1fr 1fr; gap:28px; margin:18px 0}
+    .item:nth-child(odd) .card{grid-column:1}
+    .item:nth-child(odd) .node{left:calc(50% - 10px)}
+    .item:nth-child(even) .card{grid-column:2}
+    .item:nth-child(even) .node{left:calc(50% - 10px)}
+
+    .node{position:absolute; top:18px; width:20px; height:20px; border-radius:50%; background:var(--bg-c);
+      border:2px solid var(--primary); box-shadow:0 0 18px rgba(0,234,255,.55), inset 0 0 18px rgba(0,234,255,.25); filter:var(--ring)}
+
+    .card{ position:relative; padding:16px 18px 16px 16px; border-radius:16px; overflow:hidden;
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 10px 30px rgba(0,0,0,.25); transition:transform .2s ease, border-color .2s ease; }
+    .card::before{content:""; position:absolute; inset:-1px; border-radius:16px; padding:1px;
+      background:linear-gradient(140deg, rgba(0,234,255,.5), rgba(138,43,226,.35)); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; opacity:.25}
+    .card:hover{transform:translateY(-2px); border-color:rgba(0,234,255,.2)}
+
+    .card .top{display:flex; align-items:center; gap:12px; margin-bottom:8px}
+    .icon{width:28px; height:28px; border-radius:8px; display:grid; place-items:center; font-size:16px; filter:var(--ring);
+      background:linear-gradient(120deg, rgba(0,234,255,.14), rgba(138,43,226,.14)); border:1px solid rgba(255,255,255,.12)}
+    .title{font-weight:700; color:var(--text)}
+    .meta{display:flex; flex-wrap:wrap; gap:8px; align-items:center; color:var(--muted); font-size:12px}
+
+    .badge{font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.14); color:var(--text)}
+
+    .desc{margin-top:8px; color:var(--text); opacity:.85; line-height:1.5}
+    .card .tasks{list-style:none; margin:16px 0 0; padding:0; display:flex; flex-direction:column; gap:8px;}
+    .card .task{display:flex; align-items:flex-start; gap:12px; font-size:13px; color:var(--text); background:rgba(255,255,255,.02); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,.04); position:relative; overflow:hidden;}
+    .card .task::after{content:"Synchronisé SPHAIRA"; position:absolute; right:12px; bottom:8px; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:rgba(230,247,255,.55); opacity:0; transition:.2s ease;}
+    .card .task:hover::after{opacity:1;}
+    .card .task .check{width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,.16); display:grid; place-items:center; font-size:12px; line-height:1; background:rgba(0,8,18,.6); color:var(--text); margin-top:2px;}
+    .card .task.is-done{background:rgba(0,234,255,.08); border-color:rgba(0,234,255,.25);}
+    .card .task.is-done .check{border-color:rgba(0,234,255,.5); background:rgba(0,234,255,.25); color:#001018; font-weight:700;}
+    .card .task .task-title{font-weight:600; display:block;}
+    .card .task .task-title small{font-size:11px; font-weight:500; color:var(--muted); margin-left:6px; text-transform:uppercase; letter-spacing:.05em;}
+    .card .task.is-done .task-title{text-decoration:line-through; color:var(--muted);}
+    .card .task .task-meta{display:flex; flex-wrap:wrap; gap:6px; color:var(--muted); font-size:11px; margin-top:4px; text-transform:uppercase; letter-spacing:.06em;}
+    .card .tasks.empty{margin:16px 0 0; padding:12px; border-radius:10px; border:1px dashed rgba(255,255,255,.12); color:var(--muted); text-align:center; font-size:12px; background:rgba(255,255,255,.02);}
+    .ribbon{position:absolute; top:8px; right:-36px; transform:rotate(35deg); background:linear-gradient(90deg, var(--primary), var(--accent)); color:#001018;
+      padding:4px 48px; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; box-shadow:0 0 18px rgba(0,234,255,.45)}
+
+    @media (max-width:900px){
+      .item{grid-template-columns:1fr;}
+      .timeline::before{left:24px; transform:none}
+      .node{left:14px}
+      .card{margin-left:52px}
+      .task-row{grid-template-columns:1fr; gap:8px}
+      .task-row .done{justify-content:flex-start}
+    }
+
+    /* Roadmap horizontale */
+    .roadwrap{ width:min(1400px, 95%); margin:0 auto; }
+    .roadscroll{ position:relative; overflow-x:auto; overflow-y:hidden; border:1px solid rgba(255,255,255,.08); border-radius:16px; backdrop-filter:blur(6px);
+      background:
+        repeating-linear-gradient(to right, rgba(255,255,255,.08) 0 1px, transparent 1px calc(var(--month)), transparent calc(var(--month)) calc(2*var(--month))),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .roadmap{ position:relative; min-width:1200px; height:auto; padding-top:48px; }
+
+    .axis{ position:sticky; top:0; z-index:2; height:36px; display:flex; align-items:center; gap:0; background:linear-gradient(180deg, rgba(5,6,13,.75), rgba(5,6,13,.35));
+      border-bottom:1px solid rgba(255,255,255,.08); }
+    .axis .tick{ position:relative; width:calc(var(--month)); text-align:center; font-size:12px; color:var(--muted); padding:6px 0; }
+    .axis .tick::after{ content:""; position:absolute; right:0; top:0; bottom:0; width:1px; background:rgba(255,255,255,.08) }
+
+    .lanes{ position:relative; }
+    .lane{ position:relative; height:74px; border-bottom:1px dashed rgba(255,255,255,.08); }
+    .lane.is-dim{ opacity:.35; filter:saturate(.6) }
+    .lane .label{ position:sticky; left:0; z-index:1; height:100%; display:flex; align-items:center; gap:10px; padding:0 12px; width:210px;
+      background:linear-gradient(90deg, rgba(5,6,13,.85), rgba(5,6,13,.0)); border-right:1px solid rgba(255,255,255,.08);
+      font-size:13px; text-transform:capitalize; color:var(--text); }
+    .lane .label .dot{ width:10px; height:10px; border-radius:50%; box-shadow:0 0 10px currentColor }
+
+    .lane .bars{ position:relative; height:100%; margin-left:210px; }
+    .taskMarkers{ position:absolute; inset:0; pointer-events:none; z-index:2; }
+    .taskMarker{ position:absolute; top:6px; width:14px; height:14px; border-radius:50%; border:1px solid rgba(255,255,255,.35); background:linear-gradient(130deg, rgba(0,234,255,.55), rgba(138,43,226,.45)); box-shadow:0 0 12px rgba(0,234,255,.45); pointer-events:auto; cursor:pointer; transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease; display:grid; place-items:center; color:#02121a; font-size:10px; font-weight:700; z-index:3; }
+    .taskMarker::before{content:'•'; line-height:1;}
+    .taskMarker.is-done{background:linear-gradient(130deg, rgba(143,255,210,.85), rgba(0,234,255,.7)); border-color:rgba(143,255,210,.8); color:#012018; box-shadow:0 0 12px rgba(143,255,210,.55);}
+    .taskMarker:focus-visible{outline:2px solid rgba(255,255,255,.8); outline-offset:2px; transform:scale(1.15);}
+    .taskMarker:hover{transform:scale(1.1); box-shadow:0 0 16px rgba(0,234,255,.65);}
+    .barItem{ position:absolute; top:16px; height:42px; min-width:32px; padding:8px 10px; border-radius:10px; display:flex; align-items:center; gap:8px;
+      background:linear-gradient(120deg, rgba(0,234,255,.12), rgba(138,43,226,.12)); border:1px solid rgba(255,255,255,.18);
+      box-shadow:0 8px 20px rgba(0,0,0,.25), 0 0 14px rgba(0,234,255,.15); backdrop-filter:blur(3px); white-space:nowrap; transform:translateZ(0);
+      will-change:transform; }
+    .barItem .ic{ font-size:14px }
+    .barItem .t{ font-weight:700; font-size:13px }
+    .barItem .d{ font-size:12px; color:var(--muted) }
+
+    .todayLine{ position:absolute; top:36px; bottom:0; width:2px; background:linear-gradient(180deg, var(--primary), var(--accent)); box-shadow:0 0 14px rgba(0,234,255,.35); }
+
+    .barItem[data-hint]:hover::after,
+    .taskMarker[data-hint]:hover::after,
+    .taskMarker[data-hint]:focus-visible::after{
+      content:attr(data-hint); position:absolute; left:0; bottom:calc(100% + 8px); max-width:320px;
+      background:rgba(0,8,14,.95); border:1px solid rgba(255,255,255,.15); padding:8px 10px; border-radius:8px; font-size:12px; color:var(--text);
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+    }
+
+    .overlay{position:fixed; inset:0; background:rgba(1,4,12,.75); backdrop-filter:blur(6px); display:none; z-index:9;}
+    .overlay[data-open="true"]{display:block}
+    .panel{position:fixed; right:0; top:0; bottom:0; width:min(520px, 92%); background:rgba(4,10,24,.96); border-left:1px solid rgba(0,234,255,.25);
+      box-shadow:-20px 0 40px rgba(0,0,0,.45); transform:translateX(100%); transition:transform .3s ease; z-index:10; display:flex; flex-direction:column;}
+    .panel[data-open="true"]{transform:translateX(0)}
+    .panel header{display:flex; align-items:center; justify-content:space-between; padding:24px 24px 12px; border-bottom:1px solid rgba(255,255,255,.08);}
+    .panel header h2{font-family:"Orbitron", sans-serif; font-size:18px; margin:0; letter-spacing:.08em; text-transform:uppercase; color:var(--text);}
+    .panel header .close{all:unset; cursor:pointer; color:var(--muted); font-size:20px; padding:4px; border-radius:6px; transition:.2s ease;}
+    .panel header .close:hover{color:var(--text); background:rgba(255,255,255,.08)}
+    .panel form{flex:1; overflow-y:auto; padding:16px 24px 32px; display:flex; flex-direction:column; gap:16px;}
+    .field{display:flex; flex-direction:column; gap:6px;}
+    .field label{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);}
+    .field input, .field textarea, .field select{
+      padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.14); background:rgba(0,12,24,.6); color:var(--text);
+      font-size:14px; font-family:inherit;
+    }
+    .field textarea{min-height:90px; resize:vertical}
+    .tasks-block{border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:16px; background:rgba(0,12,24,.4); display:flex; flex-direction:column; gap:12px;}
+    .tasks-block h3{margin:0; font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);}
+    .task-row{display:grid; grid-template-columns:1fr 120px 120px auto 32px; gap:10px; align-items:center; padding:10px; border-radius:10px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);}
+    .task-row input[type="text"]{width:100%;}
+    .task-row input[type="date"]{width:100%; font-size:13px;}
+    .task-row .done{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);}
+    .task-row .remove{all:unset; cursor:pointer; color:#ff6b6b; font-size:16px; padding:4px; border-radius:6px;}
+    .task-row .remove:hover{background:rgba(255,107,107,.18)}
+    .task-row input[type="checkbox"]{accent-color:var(--primary);}
+    .tasks-block .add-task{align-self:flex-start; padding:8px 12px; border-radius:999px; border:1px dashed rgba(0,234,255,.4); background:rgba(0,234,255,.08); color:var(--text); font-size:12px; cursor:pointer;}
+    .tasks-block .add-task:hover{border-style:solid}
+    .tasks-block .empty{margin:0; font-size:13px; color:var(--muted); padding:12px; border-radius:10px; border:1px dashed rgba(255,255,255,.12); background:rgba(255,255,255,.02);}
+    .panel footer{padding:16px 24px 24px; border-top:1px solid rgba(255,255,255,.08); display:flex; gap:12px;}
+    .panel footer button{flex:1; padding:12px 16px; border-radius:12px; border:1px solid rgba(0,234,255,.4); background:linear-gradient(120deg, rgba(0,234,255,.18), rgba(138,43,226,.12)); color:var(--text); font-weight:600; letter-spacing:.05em; cursor:pointer; text-transform:uppercase; font-size:12px;}
+    .panel footer .secondary{background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.12); color:var(--muted);}
+    .panel footer button:hover{filter:brightness(1.1)}
+
+    footer{color:var(--muted); text-align:center; margin:60px 0 50px}
+    .warn{color:#ffd166}
+  </style>
+</head>
+<body class="view-roadmap">
+  <div class="stars"></div>
+
+  <header class="hero">
+    <div class="brand">ECLIPTICA // Hub de pilotage</div>
+    <h1>Objectifs SPHAIRA <span class="grad">2025</span></h1>
+    <p class="lead">Visualisez, orchestrez et synchronisez la feuille de route de <strong>SPHAIRA</strong> avec <strong>ORIS</strong>. Les vues <strong>Verticale</strong> et <strong>Roadmap</strong> reflètent en temps réel les évolutions partagées entre les plateformes.</p>
+
+    <div class="controls" role="region" aria-label="Filtres et navigation">
+      <!-- Filtres par cercle principal (dynamiques) -->
+      <div id="circleChips" class="chips" aria-label="Filtre par cercle"></div>
+
+      <span class="spacer"></span>
+
+      <button class="action-btn" id="createObjective"><span class="ic">＋</span> Nouvel objectif</button>
+
+      <div class="months" aria-label="Aller au mois">
+        <button data-go="01">Jan</button>
+        <button data-go="02">Fév</button>
+        <button data-go="03">Mar</button>
+        <button data-go="04">Avr</button>
+        <button data-go="05">Mai</button>
+        <button data-go="06">Juin</button>
+        <button data-go="07">Juil</button>
+        <button data-go="08">Août</button>
+        <button data-go="09">Sep</button>
+        <button data-go="10">Oct</button>
+        <button data-go="11">Nov</button>
+        <button data-go="12">Déc</button>
+      </div>
+
+      <div class="meter" title="Progression de l'année 2025">
+        <span>Progression</span>
+        <div class="bar"><i id="yearProgress"></i></div>
+        <span id="yearPct">0%</span>
+      </div>
+
+      <div class="view" aria-label="Changer de vue">
+        <button class="chip chip-view" data-view="vertical"><span class="dot"></span> Vue verticale</button>
+        <button class="chip chip-view" data-view="roadmap" data-active="true"><span class="dot"></span> Vue roadmap</button>
+      </div>
+    </div>
+    <div class="sync-status" id="syncStatus" role="status" aria-live="polite">
+      <span class="pulse" aria-hidden="true"></span>
+      <span>Synchronisation prête avec SPHAIRA & ORIS.</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="timelineVertical" class="timeline" aria-label="Timeline 2025 (vertical)"></section>
+
+    <section id="roadmapHoriz" class="roadwrap" aria-label="Timeline 2025 (roadmap)">
+      <div class="roadscroll" id="roadscroll">
+        <div class="axis" id="axis"></div>
+        <div class="roadmap" id="roadmap">
+          <div class="lanes" id="lanes"></div>
+          <div class="todayLine" id="todayLine" hidden></div>
+        </div>
+      </div>
+      <p id="noWorkspaceHint" class="warn" style="display:none;margin:10px 6px 0 6px">⚠️ Aucun espace SPHAIRA détecté. Ouvrez d'abord <strong>SPHAIRA</strong> (l'onglet "SPHAIRA") pour créer le workspace, puis revenez ici.</p>
+    </section>
+  </main>
+
+  <div class="overlay" id="panelOverlay" aria-hidden="true"></div>
+  <aside class="panel" id="detailPanel" data-open="false" aria-hidden="true">
+    <header>
+      <h2 id="panelHeading">Nouvel objectif</h2>
+      <button type="button" class="close" id="closePanel" aria-label="Fermer la fenêtre">×</button>
+    </header>
+    <form id="objectiveForm">
+      <div class="field">
+        <label for="objectiveNode">Cercle (SPHAIRA)</label>
+        <select id="objectiveNode" required></select>
+      </div>
+      <div class="field">
+        <label for="objectiveTitle">Titre de l'objectif</label>
+        <input id="objectiveTitle" name="title" required placeholder="Ex : Stabiliser le noyau SPHAIRA">
+      </div>
+      <div class="field">
+        <label for="objectiveDate">Échéance</label>
+        <input id="objectiveDate" name="date" type="date" required>
+      </div>
+      <div class="field">
+        <label for="objectiveIcon">Icône (cosmétique)</label>
+        <input id="objectiveIcon" name="icon" maxlength="3" placeholder="🎯">
+      </div>
+      <div class="field">
+        <label for="objectiveDesc">Description</label>
+        <textarea id="objectiveDesc" name="desc" placeholder="Synthèse de l'impact et du livrable"></textarea>
+      </div>
+      <div class="tasks-block">
+        <h3>Tâches liées (synchronisées)</h3>
+        <div id="tasksContainer" aria-live="polite"></div>
+        <button type="button" class="add-task" id="addTaskBtn">＋ Ajouter une tâche</button>
+      </div>
+    </form>
+    <footer>
+      <button type="button" class="secondary" id="deleteObjective" hidden>Supprimer</button>
+      <button type="submit" form="objectiveForm" id="saveObjective">Enregistrer & synchroniser</button>
+    </footer>
+  </aside>
+
+  <footer>
+    ECLIPTICA assure la cohérence des plans d'action : les mises à jour sont écrites dans <strong>SPHAIRA</strong> (localStorage) et visibles dans <strong>ORIS</strong>.
+  </footer>
+
+  <script>
+  /* ====== Lecture/écriture SPHAIRA ====== */
+  const STORAGE_KEYS = ['sphaira:workspaceState:v2','sphaira:workspaceState:v1','workspaceState'];
+  let sphairaWorkspace = { json:null, storageKey:null };
+  const BIG_SIZE = 110; /* taille d'un cercle principal dans SPHAIRA */
+
+  function loadWorkspaceFromStorage(){
+    for(const key of STORAGE_KEYS){
+      try{ const raw = localStorage.getItem(key);
+        if(raw){ sphairaWorkspace = { json: JSON.parse(raw), storageKey:key }; return sphairaWorkspace; }
+      }catch(_){}
+    }
+    sphairaWorkspace = { json:null, storageKey:null };
+    return sphairaWorkspace;
+  }
+  function persistWorkspace(){
+    if(!sphairaWorkspace.json) return false;
+    const str = JSON.stringify(sphairaWorkspace.json);
+    try{ if(sphairaWorkspace.storageKey) localStorage.setItem(sphairaWorkspace.storageKey, str); }catch(_){}
+    try{ localStorage.setItem('workspaceState', str); }catch(_){}
+    try{ localStorage.setItem('sphaira:workspaceState:v1', str); }catch(_){}
+    try{ localStorage.setItem('sphaira:lastWriteAt', Date.now().toString()); }catch(_){}
+    return true;
+  }
+  function getAllNodes(){ return Array.isArray(sphairaWorkspace.json?.nodes) ? sphairaWorkspace.json.nodes : []; }
+  function getNodeById(id){ return getAllNodes().find(n=>n.id===id); }
+  function ensureArraysOnNode(node){
+    if(!node) return;
+    if(!Array.isArray(node._tasks) && Array.isArray(node.tasks)) node._tasks = node.tasks;
+    if(!Array.isArray(node._objectives) && Array.isArray(node.objectives)) node._objectives = node.objectives;
+    if(!Array.isArray(node._tasks)) node._tasks = [];
+    if(!Array.isArray(node._objectives)) node._objectives = [];
+    node._tasks.forEach(t=>{ if(!Array.isArray(t.objectiveIds)) t.objectiveIds = []; t.start=t.start||''; t.end=t.end||''; t.done=!!t.done; });
+    node._objectives.forEach(o=>{ if(!Array.isArray(o.taskIds)) o.taskIds = []; o.due=o.due||''; o.completed=!!o.completed; o.completedAt=o.completedAt||null; });
+    node.tasks=node._tasks; node.objectives=node._objectives;
+  }
+
+  const qualifyTaskRef      = (nodeId, taskId)=> `${nodeId}::${taskId}`;
+  const qualifyObjectiveRef = (nodeId, objId) => `${nodeId}::${objId}`;
+
+  function resolveTaskRef(ref){
+    if(!ref) return null;
+    const [nodeId,id] = String(ref).includes('::') ? String(ref).split('::') : [null, String(ref)];
+    const nodes = getAllNodes();
+    if(nodeId){
+      const n = getNodeById(nodeId); if(!n) return null; ensureArraysOnNode(n);
+      const t = (n._tasks||[]).find(x=>x.id===id); return t ? { node:n, task:t } : null;
+    }
+    for(const n of nodes){ ensureArraysOnNode(n); const t=(n._tasks||[]).find(x=>x.id===id); if(t) return { node:n, task:t }; }
+    return null;
+  }
+  function resolveObjectiveRef(ref){
+    if(!ref) return null;
+    const [nodeId,id] = String(ref).includes('::') ? String(ref).split('::') : [null, String(ref)];
+    const nodes = getAllNodes();
+    if(nodeId){
+      const n = getNodeById(nodeId); if(!n) return null; ensureArraysOnNode(n);
+      const o = (n._objectives||[]).find(x=>x.id===id); return o ? { node:n, objective:o } : null;
+    }
+    for(const n of nodes){ ensureArraysOnNode(n); const o=(n._objectives||[]).find(x=>x.id===id); if(o) return { node:n, objective:o }; }
+    return null;
+  }
+
+  function linkTaskToObjective(taskRes, objectiveRes){
+    if(!taskRes||!objectiveRes) return;
+    const t = taskRes.task, o = objectiveRes.objective, nT = taskRes.node, nO = objectiveRes.node;
+    ensureArraysOnNode(nT); ensureArraysOnNode(nO);
+    const oRef = qualifyObjectiveRef(nO.id, o.id);
+    const tRef = qualifyTaskRef(nT.id, t.id);
+    if(!t.objectiveIds.includes(oRef)) t.objectiveIds.push(oRef);
+    if(!o.taskIds.includes(tRef)) o.taskIds.push(tRef);
+  }
+  function unlinkTaskFromObjective(taskRes, objectiveRes){
+    if(!taskRes||!objectiveRes) return;
+    const t = taskRes.task, o = objectiveRes.objective, nT = taskRes.node, nO = objectiveRes.node;
+    ensureArraysOnNode(nT); ensureArraysOnNode(nO);
+    const oRef = qualifyObjectiveRef(nO.id, o.id);
+    const tRef = qualifyTaskRef(nT.id, t.id);
+    t.objectiveIds = (t.objectiveIds||[]).filter(x=>x!==oRef);
+    o.taskIds      = (o.taskIds||[]).filter(x=>x!==tRef);
+  }
+  function recomputeObjectiveCompletion(objectiveRes){
+    if(!objectiveRes) return;
+    const { node, objective } = objectiveRes; ensureArraysOnNode(node);
+    const ids = objective.taskIds||[];
+    if(ids.length===0) return;
+    const linked = ids.map(ref=>resolveTaskRef(ref)).filter(Boolean).map(x=>x.task);
+    const allDone = linked.length>0 && linked.every(t=>t.done===true);
+    if(allDone && !objective.completed){ objective.completed = true; objective.completedAt = new Date().toISOString().slice(0,10); }
+    if(!allDone && objective.completed){ objective.completed = false; objective.completedAt = null; }
+  }
+
+  /* ====== Projection SPHAIRA -> ECLIPTICA ====== */
+  function tasksForObjectiveUnion(node, obj){
+    // 1) à partir de objective.taskIds
+    const fromObjective = (obj.taskIds||[])
+      .map(ref=>resolveTaskRef(ref))
+      .filter(Boolean)
+      .map(({node:tn, task}) => ({ nodeId: tn.id, id: task.id, title: task.title||'(Sans titre)', due: task.end||task.start||'', done: !!task.done }));
+
+    // 2) à partir des task.objectiveIds qui pointent vers cet objectif
+    const allNodes = getAllNodes();
+    const oRef = qualifyObjectiveRef(node.id, obj.id);
+    const fromTasksSide = [];
+    allNodes.forEach(n=>{
+      ensureArraysOnNode(n);
+      (n._tasks||[]).forEach(t=>{
+        if(Array.isArray(t.objectiveIds) && t.objectiveIds.includes(oRef)){
+          fromTasksSide.push({ nodeId:n.id, id:t.id, title:t.title||'(Sans titre)', due:t.end||t.start||'', done:!!t.done });
+        }
+      });
+    });
+
+    // Union (par ref qualifiée)
+    const byRef = new Map();
+    [...fromObjective, ...fromTasksSide].forEach(t=>{
+      const q = qualifyTaskRef(t.nodeId, t.id);
+      if(!byRef.has(q)) byRef.set(q, { id:q, title:t.title, owner:'', due:t.due, done:t.done });
+    });
+    return Array.from(byRef.values());
+  }
+
+  function normalizeObjectiveForUI(node, obj){
+    ensureArraysOnNode(node);
+    return {
+      id: qualifyObjectiveRef(node.id, obj.id),
+      nodeId: node.id,
+      nodeName: (node.text||node.label||'').trim() || node.id,
+      nodeColor: node.color || '#00eaff',
+      date: obj.due || '2025-01-01',
+      title: obj.title || 'Objectif sans titre',
+      icon: '🎯',
+      lead: '',
+      desc: obj.desc || '',
+      tasks: tasksForObjectiveUnion(node, obj)
+    };
+  }
+
+  function buildObjectivesFromWorkspace(){
+    const nodes = getAllNodes();
+    const out = [];
+    nodes.forEach(n=>{
+      ensureArraysOnNode(n);
+      (n._objectives||[]).forEach(o=> out.push(normalizeObjectiveForUI(n,o)));
+    });
+    out.sort((a,b)=> new Date(a.date) - new Date(b.date));
+    return out;
+  }
+
+  /* ====== Détection des cercles principaux (taille = BIG_SIZE) ====== */
+  function principalCircles(){
+    const nodes = getAllNodes();
+    const mains = nodes
+      .filter(n => (parseFloat(n.w)||0) >= (BIG_SIZE-2)) // tolérance
+      .filter(n => n.id !== 'node-0')                    // on cache le noyau si présent
+      .map(n => ({
+        id: n.id,
+        name: (n.text||n.label||'').trim() || n.id,
+        color: n.color || '#00eaff'
+      }));
+    // tri alpha par nom
+    mains.sort((a,b)=> a.name.localeCompare(b.name,'fr',{sensitivity:'base'}));
+    return mains;
+  }
+
+  /* ====== UI helpers ====== */
+  const start = new Date('2025-01-01T00:00:00');
+  const end   = new Date('2025-12-31T23:59:59');
+  const isYear2025 = new Date().getFullYear() === 2025;
+
+  function fmtDate(d, withYear = false){
+    const opts = { day:'2-digit', month:'short' };
+    if(withYear) opts.year = 'numeric';
+    return new Intl.DateTimeFormat('fr-FR', opts).format(d).replace('.', '');
+  }
+  function pctOfYear(d){ return ((d - start) / (end - start)) * 100; }
+  function clamp(v,min,max){ return Math.min(max, Math.max(min, v)); }
+
+  function groupByMonth(items){
+    const map = new Map(Array.from({length:12}, (_,i)=>[(i+1).toString().padStart(2,'0'), []]));
+    for(const obj of items){ const d = new Date(obj.date); const key = (d.getMonth()+1).toString().padStart(2,'0'); map.get(key)?.push({...obj,d}); }
+    for(const [, arr] of map){ arr.sort((a,b)=>a.d-b.d); }
+    return map;
+  }
+  function groupByCircle(items){
+    const map = new Map();
+    items.forEach(o=>{
+      if(!map.has(o.nodeId)) map.set(o.nodeId, []);
+      map.get(o.nodeId).push(o);
+    });
+    for(const [, arr] of map){ arr.sort((a,b)=> new Date(a.date)-new Date(b.date)); }
+    return map;
+  }
+  function computeTaskSummary(obj){
+    const total = obj.tasks?.length ?? 0;
+    const done = obj.tasks?.filter(t => t.done).length ?? 0;
+    const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+    return { total, done, pct };
+  }
+  function buildTaskList(tasks){
+    if(!tasks || tasks.length === 0){
+      const empty = document.createElement('div'); empty.className = 'tasks empty'; empty.textContent = 'Aucune tâche renseignée'; return empty;
+    }
+    const list = document.createElement('ul'); list.className = 'tasks'; list.setAttribute('role', 'list');
+    tasks.forEach(task => {
+      const item = document.createElement('li'); item.className = 'task' + (task.done ? ' is-done' : '');
+      const check = document.createElement('span'); check.className = 'check'; check.textContent = task.done ? '✓' : ''; check.setAttribute('aria-hidden', 'true'); item.appendChild(check);
+      const details = document.createElement('div');
+      const title = document.createElement('span'); title.className = 'task-title'; title.textContent = task.title;
+      const rawDue = task.due ? new Date(task.due) : null; const hasValidDue = rawDue && !Number.isNaN(rawDue.valueOf());
+      const badge = document.createElement('small'); badge.textContent = hasValidDue ? fmtDate(rawDue, true) : 'Sans échéance'; title.appendChild(badge);
+      details.appendChild(title);
+      const meta = document.createElement('span'); meta.className='task-meta'; meta.textContent = task.done ? '✓ Terminé' : '• À suivre'; details.appendChild(meta);
+      item.appendChild(details); list.appendChild(item);
+    });
+    return list;
+  }
+
+  /* ====== RENDERERS ====== */
+  let OBJECTIVES = [];
+  function renderVertical(){
+    const container = document.getElementById('timelineVertical');
+    const byMonth = groupByMonth(OBJECTIVES);
+    const today = new Date(); const todayKey = isYear2025 ? (today.getMonth()+1).toString().padStart(2,'0') : null;
+    container.innerHTML = '';
+    for(let i=1;i<=12;i++){
+      const key = i.toString().padStart(2,'0');
+      const section = document.createElement('section'); section.className = 'month' + (todayKey === key ? ' is-today' : ''); section.id = `m${key}`;
+      const heading = document.createElement('h2'); heading.textContent = new Date(`2025-${key}-01`).toLocaleDateString('fr-FR', {month:'long'}); section.appendChild(heading);
+      const monthObjectives = byMonth.get(key) ?? [];
+      if(monthObjectives.length === 0){
+        const empty = document.createElement('div'); empty.className = 'item is-empty'; empty.dataset.placeholder = 'true';
+        empty.innerHTML = `<span class="node" aria-hidden="true"></span><div class="card"><div class="meta">Aucun objectif planifié</div></div>`;
+        section.appendChild(empty);
+      }else{
+        monthObjectives.forEach(obj=>{
+          const summary = computeTaskSummary(obj);
+          const progressText = summary.total ? `${summary.done}/${summary.total} tâches` : 'Aucune tâche';
+          const item = document.createElement('article'); item.className = 'item'; item.dataset.circle = obj.nodeId; item.dataset.id = obj.id;
+          const isTodayObjective = isYear2025 && obj.d?.toDateString?.() === today.toDateString();
+          item.innerHTML = `
+            <span class="node" aria-hidden="true"></span>
+            <div class="card" role="button" tabindex="0" aria-label="${obj.title}">
+              ${isTodayObjective ? '<div class="ribbon">Aujourd\'hui</div>' : ''}
+              <div class="top">
+                <div class="icon">${obj.icon || '🗂️'}</div>
+                <div>
+                  <div class="title">${obj.title}</div>
+                  <div class="meta">
+                    <span>${fmtDate(new Date(obj.date))}</span>
+                    <span class="badge" style="border-color:${obj.nodeColor}; color:${obj.nodeColor}">${obj.nodeName}</span>
+                    <span>${progressText}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="meta">
+                <span>Synchronisé SPHAIRA • ORIS</span>
+              </div>
+              <p class="desc">${obj.desc || ''}</p>
+            </div>`;
+          section.appendChild(item);
+          const card = item.querySelector('.card');
+          card.appendChild(buildTaskList(obj.tasks));
+          card.addEventListener('click', () => openPanel(obj.id));
+          card.addEventListener('keydown', (ev) => { if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); openPanel(obj.id); }});
+        });
+      }
+      container.appendChild(section);
+    }
+  }
+
+  function renderRoadmap(){
+    const axis = document.getElementById('axis');
+    const lanesWrap = document.getElementById('lanes');
+    const todayLine = document.getElementById('todayLine');
+    axis.innerHTML = '';
+    for(let i=0;i<12;i++){
+      const tick = document.createElement('div'); tick.className = 'tick'; tick.style.width = 'calc(var(--month))';
+      tick.textContent = new Date(2025, i, 1).toLocaleDateString('fr-FR', {month:'short'}).replace('.', '');
+      axis.appendChild(tick);
+    }
+    lanesWrap.innerHTML = '';
+    const byCircle = groupByCircle(OBJECTIVES);
+    // Ordonner les lanes selon l’ordre des cercles principaux
+    const mains = principalCircles().map(m=>m.id);
+    const laneOrder = Array.from(byCircle.keys()).sort((a,b)=> mains.indexOf(a) - mains.indexOf(b));
+    laneOrder.forEach(nodeId=>{
+      const arr = byCircle.get(nodeId)||[];
+      if(arr.length===0) return;
+      const meta = principalCircles().find(m=>m.id===nodeId) || {name: arr[0].nodeName, color: arr[0].nodeColor};
+      const lane = document.createElement('div'); lane.className='lane'; lane.dataset.circle=nodeId;
+      const label = document.createElement('div'); label.className='label'; label.innerHTML = `<span class="dot" style="color:${meta.color}"></span> ${meta.name}`;
+      lane.appendChild(label);
+      const bars = document.createElement('div'); bars.className='bars';
+      const markers = document.createElement('div'); markers.className='taskMarkers'; bars.appendChild(markers);
+
+      arr.forEach(obj=>{
+        const d = new Date(obj.date); const left = pctOfYear(d);
+        const bar = document.createElement('div'); bar.className='barItem'; bar.dataset.circle=obj.nodeId; bar.dataset.id=obj.id;
+        bar.style.left = `calc(${left}% - 80px)`; bar.style.width='max(2%, 140px)';
+        const summary = computeTaskSummary(obj); const progressText = summary.total ? `${summary.done}/${summary.total} tâches` : 'Aucune tâche';
+        bar.setAttribute('data-hint', `${fmtDate(d, true)} — ${progressText}`);
+        bar.innerHTML = `<span class="ic">${obj.icon||'🗂️'}</span><span class="t">${obj.title}</span><span class="d">• ${fmtDate(d)}</span>`;
+        bar.setAttribute('role','button'); bar.setAttribute('tabindex','0');
+        bars.appendChild(bar);
+
+        (obj.tasks||[]).forEach(task=>{
+          const rawDue = task.due ? new Date(task.due) : d;
+          if(!rawDue || Number.isNaN(rawDue.valueOf())) return;
+          const marker = document.createElement('span');
+          marker.className = 'taskMarker' + (task.done ? ' is-done' : '');
+          marker.dataset.circle = obj.nodeId;
+          const pct = clamp(pctOfYear(rawDue), 0, 100);
+          marker.style.left = `calc(${pct}% - 7px)`;
+          const statusLabel = task.done ? 'Terminé' : 'À suivre';
+          marker.setAttribute('data-hint', `${task.title} — ${statusLabel} • ${fmtDate(rawDue, true)}`);
+          marker.setAttribute('role','button'); marker.setAttribute('tabindex','0');
+          marker.addEventListener('click', () => openPanel(obj.id));
+          marker.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); openPanel(obj.id); }});
+          markers.appendChild(marker);
+        });
+
+        bar.addEventListener('click', () => openPanel(obj.id));
+        bar.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); openPanel(obj.id); }});
+      });
+
+      lane.appendChild(bars); lanesWrap.appendChild(lane);
+    });
+
+    if(isYear2025){ const position = pctOfYear(new Date()); todayLine.style.left = `calc(${position}% + 210px)`; todayLine.hidden = false; } else { todayLine.hidden = true; }
+  }
+
+  /* ====== Filtres & commandes ====== */
+  let currentFilter = 'tous'; // 'tous' ou nodeId principal
+  function applyFilter(circleId){
+    currentFilter = circleId;
+    // Vertical
+    document.querySelectorAll('#timelineVertical .item').forEach(item=>{
+      if(item.dataset.placeholder==='true'){ item.style.display = circleId==='tous' ? '' : 'none'; return; }
+      item.style.display = (circleId==='tous' || item.dataset.circle===circleId) ? '' : 'none';
+    });
+    document.querySelectorAll('#timelineVertical .month').forEach(section=>{
+      const hasVisible = Array.from(section.querySelectorAll('.item')).some(it => it.style.display !== 'none');
+      section.style.display = hasVisible ? '' : 'none';
+    });
+    // Roadmap
+    document.querySelectorAll('#lanes .lane').forEach(lane=>{
+      if(circleId==='tous'){ lane.style.display=''; lane.classList.remove('is-dim');
+        lane.querySelectorAll('.barItem,.taskMarker').forEach(el=>{ el.style.opacity=1; el.style.pointerEvents='auto'; el.setAttribute('tabindex','0'); });
+      }else{
+        const match = lane.dataset.circle===circleId;
+        lane.style.display = ''; lane.classList.toggle('is-dim', !match);
+        lane.querySelectorAll('.barItem,.taskMarker').forEach(el=>{
+          el.style.opacity = match ? 1 : 0.2; el.style.pointerEvents = match ? 'auto' : 'none'; el.setAttribute('tabindex', match ? '0' : '-1');
+        });
+      }
+    });
+  }
+
+  function mountCircleChips(){
+    const wrap = document.getElementById('circleChips');
+    wrap.innerHTML = '';
+    // Puce "Tous"
+    const all = document.createElement('button');
+    all.className='chip'; all.dataset.cat='tous'; all.dataset.active='true';
+    all.innerHTML = `<span class="dot" style="color: var(--primary)"></span> Tous`;
+    all.addEventListener('click',()=>{
+      Array.from(wrap.children).forEach(c=>c.dataset.active='false'); all.dataset.active='true'; applyFilter('tous');
+    });
+    wrap.appendChild(all);
+
+    // Cercles principaux
+    const mains = principalCircles();
+    mains.forEach(m=>{
+      const btn = document.createElement('button');
+      btn.className='chip'; btn.dataset.cat=m.id; btn.innerHTML = `<span class="dot" style="color:${m.color}"></span> ${m.name}`;
+      btn.addEventListener('click', ()=>{
+        Array.from(wrap.children).forEach(c=>c.dataset.active='false'); btn.dataset.active='true'; applyFilter(m.id);
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function attachMonthNav(){ document.querySelectorAll('.months button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.go;
+      if(document.body.classList.contains('view-vertical')){ document.getElementById(`m${key}`)?.scrollIntoView({behavior:'smooth', block:'start'}); }
+      else { const scroll = document.getElementById('roadscroll'); const ratio = (parseInt(key, 10) - 1) / 12; const target = ratio * (scroll.scrollWidth - scroll.clientWidth); scroll.scrollTo({ left: Math.max(0, target), behavior: 'smooth' }); }
+    });
+  });}
+  function setYearProgress(){ const now = new Date(); let pct = 0; if(now < start) pct = 0; else if(now > end) pct = 100; else pct = ((now - start) / (end - start)) * 100; document.getElementById('yearProgress').style.setProperty('--p', pct.toFixed(2) + '%'); document.getElementById('yearPct').textContent = Math.round(pct) + '%'; }
+  function attachViewSwitch(){ const chips = document.querySelectorAll('.chip-view'); chips.forEach(chip => { chip.addEventListener('click', () => { chips.forEach(c => c.dataset.active = 'false'); chip.dataset.active = 'true'; const view = chip.dataset.view; document.body.classList.toggle('view-vertical', view === 'vertical'); document.body.classList.toggle('view-roadmap', view === 'roadmap'); }); }); }
+
+  /* ====== Panneau (CRUD objectif) ====== */
+  const overlay = document.getElementById('panelOverlay');
+  const panel = document.getElementById('detailPanel');
+  const panelHeading = document.getElementById('panelHeading');
+  const closePanelBtn = document.getElementById('closePanel');
+  const objectiveForm = document.getElementById('objectiveForm');
+  const tasksContainer = document.getElementById('tasksContainer');
+  const addTaskBtn = document.getElementById('addTaskBtn');
+  const deleteObjectiveBtn = document.getElementById('deleteObjective');
+  const createObjectiveBtn = document.getElementById('createObjective');
+  const syncStatus = document.getElementById('syncStatus');
+  const syncStatusMessage = syncStatus.querySelector('span:last-child');
+  const objectiveNodeSelect = document.getElementById('objectiveNode');
+
+  let currentObjectiveId = null;
+
+  function showEmptyTaskMessage(){ tasksContainer.innerHTML = '<p class="empty">Aucune tâche définie pour le moment.</p>'; }
+  function buildTaskRow(task = {}){
+    const row = document.createElement('div'); row.className = 'task-row';
+    const rowId = task.id || `t${Date.now()}${Math.random().toString(36).slice(2,5)}`;
+    row.dataset.id = rowId;
+    row.innerHTML = `
+      <input type="text" class="task-title" placeholder="Titre de la tâche" value="${task.title ?? ''}" required>
+      <input type="text" class="task-owner" placeholder="Pilote (cosmétique)" value="${task.owner ?? ''}">
+      <input type="date" class="task-due" value="${task.due ?? ''}">
+      <label class="done"><input type="checkbox" class="task-done" ${task.done ? 'checked' : ''}> Terminé</label>
+      <button type="button" class="remove" title="Supprimer la tâche">×</button>`;
+    row.querySelector('.remove').addEventListener('click', () => { row.remove(); ensureTaskEmptyState(); });
+    return row;
+  }
+  function ensureTaskEmptyState(){ if(!tasksContainer.querySelector('.task-row')){ showEmptyTaskMessage(); } }
+  function renderTaskRows(tasks){ tasksContainer.innerHTML=''; if(!tasks || tasks.length===0){ showEmptyTaskMessage(); return; } tasks.forEach(task => tasksContainer.appendChild(buildTaskRow(task))); }
+  function addTaskRow(task = {}){ if(tasksContainer.querySelector('.empty')) tasksContainer.innerHTML=''; tasksContainer.appendChild(buildTaskRow(task)); }
+
+  function populateNodeSelector(){
+    const ws = sphairaWorkspace.json; if(!ws){ objectiveNodeSelect.innerHTML = '<option value="">—</option>'; return; }
+    const nodes = getAllNodes();
+    const items = nodes.map(n=>({ id:n.id, name: (n.text||n.label||'').trim() || n.id }));
+    objectiveNodeSelect.innerHTML = items.map(it=>`<option value="${it.id}">${it.name}</option>`).join('');
+  }
+
+  function openPanel(id = null){
+    currentObjectiveId = id;
+    overlay.dataset.open = 'true'; overlay.setAttribute('aria-hidden', 'false'); panel.dataset.open = 'true'; panel.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; objectiveForm.reset();
+    if(id){
+      const res = resolveObjectiveRef(id); if(!res){ showEmptyTaskMessage(); deleteObjectiveBtn.hidden = true; return; }
+      const { node, objective } = res; ensureArraysOnNode(node);
+      panelHeading.textContent = objective.title||'Objectif';
+      objectiveNodeSelect.value = node.id;
+      document.getElementById('objectiveTitle').value = objective.title||'';
+      document.getElementById('objectiveDate').value = objective.due||'';
+      document.getElementById('objectiveIcon').value = '🎯';
+      document.getElementById('objectiveDesc').value = objective.desc||'';
+      const uiObj = normalizeObjectiveForUI(node, objective);
+      renderTaskRows(uiObj.tasks||[]);
+      deleteObjectiveBtn.hidden = false;
+    } else {
+      panelHeading.textContent = 'Nouvel objectif';
+      const today = new Date();
+      const defaultDate = today.getFullYear() === 2025 ? today.toISOString().slice(0,10) : '2025-01-01';
+      document.getElementById('objectiveDate').value = defaultDate;
+      document.getElementById('objectiveIcon').value = '🎯';
+      renderTaskRows([]);
+      deleteObjectiveBtn.hidden = true;
+    }
+  }
+  function closePanel(){ panel.dataset.open = 'false'; panel.setAttribute('aria-hidden', 'true'); overlay.dataset.open = 'false'; overlay.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; objectiveForm.reset(); showEmptyTaskMessage(); currentObjectiveId = null; }
+  function syncWithSystems(action, title){ const ts = new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }); const msg = action==='suppression' ? `Suppression synchronisée pour « ${title} » (${ts}).` : `${action==='création'?'Création':'Mise à jour'} synchronisée pour « ${title} » — SPHAIRA & ORIS alignés (${ts}).`; syncStatusMessage.textContent = msg; }
+
+  function refreshTimelines(){ renderVertical(); renderRoadmap(); applyFilter(currentFilter); }
+
+  /* ====== SAVE objective ====== */
+  objectiveForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if(!sphairaWorkspace.json){ alert('Workspace SPHAIRA introuvable. Ouvrez SPHAIRA d\'abord.'); return; }
+    const nodeId = String(document.getElementById('objectiveNode').value||'');
+    const node = getNodeById(nodeId);
+    if(!node){ alert('Sélectionnez un cercle SPHAIRA.'); return; }
+    ensureArraysOnNode(node);
+
+    const formData = new FormData(objectiveForm);
+    const title = (formData.get('title')||'').toString().trim();
+    const due = (formData.get('date')||'').toString();
+    const desc = (formData.get('desc')||'').toString();
+
+    const rows = Array.from(tasksContainer.querySelectorAll('.task-row'));
+    const uiTasks = rows.map(row=>({
+      id: row.dataset.id,
+      title: row.querySelector('.task-title').value.trim(),
+      due: row.querySelector('.task-due').value,
+      done: row.querySelector('.task-done').checked
+    })).filter(t=>t.title);
+
+    let action = 'création';
+
+    if(currentObjectiveId){
+      const res = resolveObjectiveRef(currentObjectiveId); if(!res){ alert('Objectif introuvable.'); return; }
+      const { node: curNode, objective } = res; ensureArraysOnNode(curNode);
+      let targetNode = curNode;
+      if(curNode.id !== node.id){
+        curNode._objectives = curNode._objectives.filter(o=>o.id!==objective.id);
+        targetNode = node; ensureArraysOnNode(targetNode); targetNode._objectives.push(objective);
+      }
+      objective.title = title; objective.due = due; objective.desc = desc;
+
+      const objectiveRef = qualifyObjectiveRef(targetNode.id, objective.id);
+      const beforeSet = new Set((objective.taskIds||[]));
+
+      // Mettre à jour / créer les tâches et lier dans les deux sens
+      uiTasks.forEach(tu=>{
+        let resTask = resolveTaskRef(tu.id);
+        if(!resTask){
+          const newId = 't'+Date.now()+Math.random().toString(36).slice(2,5);
+          const task = { id:newId, title: tu.title, desc:'', start:'', end: tu.due||'', done: !!tu.done, objectiveIds:[] };
+          targetNode._tasks.push(task); resTask = { node: targetNode, task };
+        }else{
+          resTask.task.title = tu.title; resTask.task.end = tu.due||''; resTask.task.done = !!tu.done;
+        }
+        linkTaskToObjective(resTask, { node: targetNode, objective });
+      });
+
+      const nowIds = new Set(uiTasks.map(t=>{ const r = resolveTaskRef(t.id); if(r) return qualifyTaskRef(r.node.id, r.task.id); return null; }).filter(Boolean));
+      for(const ref of beforeSet){ if(!nowIds.has(ref)){ const r = resolveTaskRef(ref); if(r) unlinkTaskFromObjective(r, { node: targetNode, objective }); } }
+
+      recomputeObjectiveCompletion({ node: targetNode, objective });
+      action = 'mise à jour';
+    } else {
+      const newObjId = 'o'+Date.now()+Math.random().toString(36).slice(2,5);
+      const objective = { id:newObjId, title, desc, due, taskIds:[], completed:false, completedAt:null };
+      node._objectives.push(objective);
+      uiTasks.forEach(tu=>{
+        const newId = 't'+Date.now()+Math.random().toString(36).slice(2,5);
+        const task = { id:newId, title: tu.title, desc:'', start:'', end: tu.due||'', done: !!tu.done, objectiveIds:[] };
+        node._tasks.push(task);
+        linkTaskToObjective({ node, task }, { node, objective });
+      });
+      recomputeObjectiveCompletion({ node, objective });
+      currentObjectiveId = qualifyObjectiveRef(node.id, newObjId);
+    }
+
+    if(!persistWorkspace()){ alert('Impossible d\'enregistrer SPHAIRA.'); return; }
+    syncWithSystems(action, title);
+    closePanel();
+    loadObjectives();
+  });
+
+  /* ====== DELETE ====== */
+  document.getElementById('deleteObjective').addEventListener('click', () => {
+    if(!currentObjectiveId) return;
+    const res = resolveObjectiveRef(currentObjectiveId); if(!res) return;
+    const { node, objective } = res; ensureArraysOnNode(node);
+    if(!confirm(`Supprimer l'objectif « ${objective.title} » ?`)) return;
+    (objective.taskIds||[]).forEach(ref=>{ const r = resolveTaskRef(ref); if(r) unlinkTaskFromObjective(r, res); });
+    node._objectives = node._objectives.filter(o=>o.id!==objective.id);
+    if(!persistWorkspace()){ alert('Impossible d\'enregistrer SPHAIRA.'); return; }
+    syncWithSystems('suppression', objective.title||'Objectif');
+    closePanel();
+    loadObjectives();
+  });
+
+  /* ====== Synchro et boot ====== */
+  function refreshAll(){ OBJECTIVES = sphairaWorkspace.json ? buildObjectivesFromWorkspace() : []; renderVertical(); renderRoadmap(); mountCircleChips(); applyFilter(currentFilter); }
+  function loadObjectives(){
+    const syncStatus = document.getElementById('syncStatus');
+    const syncStatusMessage = syncStatus.querySelector('span:last-child');
+    syncStatusMessage.textContent = 'Chargement depuis SPHAIRA…';
+    try{
+      const ws = loadWorkspaceFromStorage();
+      const hint = document.getElementById('noWorkspaceHint');
+      hint.style.display = ws.json ? 'none' : '';
+      refreshAll();
+      const ts = new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+      syncStatusMessage.textContent = `Synchronisé avec SPHAIRA — ${ts}`;
+      populateNodeSelector();
+    }catch(e){
+      console.error(e);
+      syncStatusMessage.textContent = `Erreur de synchronisation SPHAIRA : ${e.message}`;
+    }
+  }
+
+  // UI events
+  document.getElementById('addTaskBtn').addEventListener('click', () => addTaskRow({}));
+  document.getElementById('createObjective').addEventListener('click', () => openPanel());
+  document.getElementById('closePanel').addEventListener('click', closePanel);
+  document.getElementById('panelOverlay').addEventListener('click', closePanel);
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && panel.dataset.open==='true') closePanel(); });
+
+  // Storage sync (SPHAIRA écrit ici aussi)
+  window.addEventListener('storage', (event) => {
+    if(STORAGE_KEYS.includes(event.key) || event.key==='sphaira:lastWriteAt') loadObjectives();
+  });
+
+  // Démarrage
+  loadObjectives();
+  attachViewSwitch();
+  attachMonthNav();
+  setYearProgress();
+  setInterval(setYearProgress, 60*60*1000);
+  </script>
+</body>
+</html>
