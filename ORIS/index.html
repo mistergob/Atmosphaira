@@ -336,6 +336,9 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZnZiZ2d6ZGtrd3JtcHNhbXZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyNjUyNjMsImV4cCI6MjA3Mjg0MTI2M30.kDbtNVQfHEVxRbA8jsAfLu7-6kDioTCG-nWVQ91gJIs";
   const ATMOS_URL = "https://mistergob.github.io/Atmos/";
   const STORAGE_KEY = `sb-${PROJECT_REF}-auth-token`;
+  const DEMO_AUTH_KEY = 'atmos:demo-auth';
+  const DEMO_AUTH_BEAT_KEY = 'atmos:demo-auth:beat';
+  const DEMO_AUTH_TIMEOUT = 15_000;
 
   // Heartbeat
   const ORIS_BEAT_KEY = 'oris:beatAt';
@@ -419,6 +422,7 @@
     if(rawVisible){ JSON.parse(rawVisible).forEach(id=> visibleCalendars.add(id)); }
   }catch{}
   let hasLoadedCalendars = false;
+  let hasSupabaseSession = false;
 
   const SPHAIRA_CALENDAR_ID = 'sphaira-tasks';
   const SPHAIRA_CALENDAR = {
@@ -439,6 +443,15 @@
     document.body.classList.toggle('auth-locked', !!on);
     const expanded = !on;
     toggleTasksBtn.setAttribute('aria-expanded', String(expanded));
+  }
+
+  function hasActiveDemoAuth(){
+    try{
+      if(localStorage.getItem(DEMO_AUTH_KEY) !== 'enabled') return false;
+      const beat = Number(localStorage.getItem(DEMO_AUTH_BEAT_KEY) || '0');
+      if(!Number.isFinite(beat)) return false;
+      return (Date.now() - beat) < DEMO_AUTH_TIMEOUT;
+    }catch{return false;}
   }
 
   /* ==============================
@@ -1596,16 +1609,48 @@
   bindAuth();
 
   async function checkAuth(){
-    const { data } = await supabase.auth.getSession();
-    setAuthLocked(!data?.session);
-    if(data?.session){
+    let session = null;
+    try{
+      const { data } = await supabase.auth.getSession();
+      session = data?.session || null;
+    }catch(err){
+      console.warn('[ORIS] Récupération de session Supabase impossible.', err);
+    }
+
+    hasSupabaseSession = !!session;
+    const demoAuth = hasActiveDemoAuth();
+    setAuthLocked(!(hasSupabaseSession || demoAuth));
+
+    if(hasSupabaseSession){
       const ok = await tryGoogleFromAtmos();
       if(!ok){ setStatus('Session ATMOS active : cliquez « Connecter Google ».'); }
+    }else if(demoAuth){
+      setStatus('Mode démo ATMOS : cliquez « Connecter Google ».');
+    }else{
+      setStatus('Connexion à ATMOS requise.');
     }
   }
   supabase.auth.onAuthStateChange(async (_evt, session) => {
-    setAuthLocked(!session);
-    if(session){ await tryGoogleFromAtmos(); }
+    hasSupabaseSession = !!session;
+    const demoAuth = hasActiveDemoAuth();
+    setAuthLocked(!(hasSupabaseSession || demoAuth));
+
+    if(hasSupabaseSession){
+      const ok = await tryGoogleFromAtmos();
+      if(!ok){ setStatus('Session ATMOS active : cliquez « Connecter Google ».'); }
+    }else if(demoAuth){
+      setStatus('Mode démo ATMOS : cliquez « Connecter Google ».');
+    }else{
+      setStatus('Connexion à ATMOS requise.');
+    }
+  });
+
+  window.addEventListener('storage', (event)=>{
+    if(event.key && event.key !== DEMO_AUTH_KEY && event.key !== DEMO_AUTH_BEAT_KEY) return;
+    if(hasSupabaseSession) return;
+    const demoAuth = hasActiveDemoAuth();
+    setAuthLocked(!demoAuth);
+    setStatus(demoAuth ? 'Mode démo ATMOS : cliquez « Connecter Google ».' : 'Connexion à ATMOS requise.');
   });
 
   // initial

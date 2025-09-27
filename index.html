@@ -124,6 +124,41 @@
       box-shadow: 0 0 0 3px var(--ring);
     }
   </style>
+  <script>
+    (function enableDemoAuth(){
+      const DEMO_KEY = 'atmos:demo-auth';
+      const BEAT_KEY = 'atmos:demo-auth:beat';
+      const BEAT_INTERVAL = 5000;
+      let beatTimer = null;
+
+      try {
+        localStorage.setItem(DEMO_KEY, 'enabled');
+      } catch (err) {
+        console.warn('[ATMOS] Mode démo indisponible : stockage local inaccessible.', err);
+        return;
+      }
+
+      const beat = () => {
+        try { localStorage.setItem(BEAT_KEY, Date.now().toString()); }
+        catch (_) {}
+      };
+
+      beat();
+      beatTimer = setInterval(beat, BEAT_INTERVAL);
+
+      window.addEventListener('visibilitychange', () => {
+        if (!document.hidden) { beat(); }
+      });
+
+      window.addEventListener('beforeunload', () => {
+        if (beatTimer) { clearInterval(beatTimer); }
+        try {
+          localStorage.removeItem(DEMO_KEY);
+          localStorage.removeItem(BEAT_KEY);
+        } catch (_) {}
+      });
+    })();
+  </script>
 </head>
 <body>
   <div class="shell">
