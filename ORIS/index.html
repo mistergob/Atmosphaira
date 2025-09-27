@@ -1609,7 +1609,7 @@
   });
 
   // initial
-  // Appliquer vue persistée
+  // Appliqur vue persistée
   viewBtns.forEach(x=>{ x.classList.toggle('active', x.dataset.view===currentView); x.setAttribute('aria-selected', String(x.dataset.view===currentView)); });
   if (location.protocol === "file:") { console.warn("⚠️ Ouvre via HTTPS (ou un serveur local) pour l’auth Google."); }
   checkAuth();
