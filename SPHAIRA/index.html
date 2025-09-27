@@ -2175,7 +2175,7 @@ function restoreState(data){
   if(!byId['node-0']){ mainNode.dataset.id='node-0'; mainNode.querySelector('.label').textContent='Cercle principal'; byId['node-0']=mainNode; }
   enableDrag(mainNode); fitLabelToNode(mainNode);
   (data?.edges||[]).forEach(e=>{ if(byId[e.from]&&byId[e.to]) { const l=createLine(byId[e.from],byId[e.to]); styleLineByNodes(l); } });
-  // recompute objectives after load (legacy data)
+  // recompte objectives after load (legacy data)
   Object.values(byId).forEach(n=>recomputeAllObjectives(n));
   updateAllLines(); refreshSidebar(); saveState(); showActionsPanel(false); menu2Locked=false;
 }
