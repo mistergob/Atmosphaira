@@ -12,77 +12,80 @@
   <style>
     :root{
       /* Design tokens ATMOS */
-      --primary:#00eaff;           /* cyan néon */
-      --accent:#8a2be2;            /* violet néon */
-      --text:#e6f7ff;
-      --muted:#9fb3c8;
-
-      --bg-a:#05060d;              /* dégradé spatial */
-      --bg-b:#0b1430;
-      --bg-c:#00182a;
+      --primary:#00eaff; --accent:#8a2be2; --text:#e6f7ff; --muted:#9fb3c8;
+      --bg-a:#05060d; --bg-b:#0b1430; --bg-c:#00182a;
       --space-img:url("https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?q=80&w=1920&auto=format&fit=crop");
-
-      --card:#0e1633;
-      --card-edge:rgba(138,43,226,.22);
-      --ring:rgba(0,234,255,.28);
-      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --card:#0e1633; --card-edge:rgba(138,43,226,.22);
+      --ring:rgba(0,234,255,.28); --shadow:0 10px 30px rgba(0,0,0,.35);
       --radius:18px;
     }
 
-    /* Reset léger */
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; color:var(--text);
-      font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
       background:
         radial-gradient(1200px 700px at 10% -10%, rgba(138,43,226,.18), transparent 60%),
         radial-gradient(1000px 600px at 90% 10%, rgba(0,234,255,.18), transparent 60%),
         linear-gradient(160deg, var(--bg-a), var(--bg-b) 45%, var(--bg-c));
-      background-attachment: fixed;
-      overflow-y:auto;
+      background-attachment:fixed; overflow-y:auto;
     }
     body::before{
       content:""; position:fixed; inset:0; pointer-events:none; opacity:.18;
-      background-image: var(--space-img);
-      background-size: cover; background-position:center;
-      mix-blend-mode: screen;
-      filter: saturate(1.2) contrast(1.05) brightness(.9);
+      background-image: var(--space-img); background-size:cover; background-position:center;
+      mix-blend-mode:screen; filter:saturate(1.2) contrast(1.05) brightness(.9);
     }
 
-    /* Layout */
     .shell{max-width:1300px; margin:0 auto; padding:24px 20px 56px}
-    header{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:16px; padding:14px 18px; border:1px solid rgba(255,255,255,.06);
-      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-      backdrop-filter: blur(6px);
-      border-radius: calc(var(--radius) + 6px);
-      box-shadow: var(--shadow);
+
+    /* Hero */
+    .hero{ margin:6px 2px 14px }
+    .hero h1{
+      font-family:'Orbitron', sans-serif; font-size: clamp(26px, 3.8vw, 36px);
+      margin:0 0 10px; letter-spacing:.6px;
     }
-    .brand{
-      display:flex; align-items:center; gap:14px;
-      text-decoration:none; color:var(--text);
+    .hero p{ margin:0; color:var(--muted) }
+
+    /* Dashboard grid */
+    .grid{ display:grid; gap:16px; grid-template-columns: repeat(12, 1fr); margin-top:18px; }
+    .col-4{ grid-column: span 4 } .col-8{ grid-column: span 8 }
+    @media (max-width:1000px){ .col-8,.col-4{ grid-column: span 12 } }
+
+    .card{
+      position:relative; border-radius:var(--radius); background:rgba(6,10,24,.55);
+      border:1px solid rgba(255,255,255,.07); box-shadow:var(--shadow); overflow:hidden;
     }
-    .brand-icon{
-      width:38px; height:38px; border-radius:12px;
-      background:
-        radial-gradient(180% 120% at 20% 15%, rgba(0,234,255,.6), transparent 50%),
-        radial-gradient(140% 110% at 80% 85%, rgba(138,43,226,.55), transparent 55%),
-        linear-gradient(145deg, #0b1430, #05060d 60%);
+    .card::before{
+      content:""; position:absolute; inset:0; pointer-events:none;
+      background: radial-gradient(120% 80% at 0% 0%, rgba(0,234,255,.10), transparent 60%);
+      mix-blend-mode:screen;
+    }
+    .card .head{ display:flex; align-items:center; justify-content:space-between; padding:16px 16px 10px; border-bottom:1px solid rgba(255,255,255,.06) }
+    .card .title{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.3px }
+    .chip{ font-size:12px; color:var(--primary); border:1px solid rgba(0,234,255,.35); padding:4px 8px; border-radius:999px; background:rgba(0,234,255,.08) }
+    .card .body{ padding:16px }
+    .card .links{ display:flex; flex-wrap:wrap; gap:10px }
+    .link-tile{
+      flex:1 1 220px; min-height:110px; display:flex; flex-direction:column; justify-content:space-between;
+      padding:14px; border-radius:14px; text-decoration:none; color:var(--text);
       border:1px solid rgba(255,255,255,.08);
-      box-shadow:
-        0 0 0 2px rgba(0,234,255,.08),
-        inset 0 0 18px rgba(0,234,255,.12),
-        0 10px 24px rgba(0,0,0,.35);
+      background:
+        radial-gradient(160% 140% at 20% 15%, rgba(0,234,255,.10), transparent 45%),
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
     }
-    .brand-title{
-      font-family:'Orbitron', sans-serif; font-weight:800; letter-spacing:.8px;
-      text-shadow: 0 0 12px rgba(0,234,255,.35);
-      display:flex; gap:10px; align-items:baseline;
-    }
-    .brand-title .accent{color:var(--primary)}
-    .header-actions{display:flex; gap:8px; align-items:center}
+    .link-tile:hover{ transform:translateY(-2px); border-color:rgba(0,234,255,.35); box-shadow:0 12px 28px rgba(0,234,255,.12); }
+    .tile-top{ display:flex; align-items:center; gap:10px }
+    .dot{ width:10px; height:10px; border-radius:50%; box-shadow:0 0 14px rgba(0,234,255,.6), inset 0 0 6px rgba(0,234,255,.6); background: radial-gradient(circle at 40% 40%, var(--primary), #008a96); }
+    .kpi{ font: 800 22px 'Orbitron', sans-serif; letter-spacing:.5px }
+
+    /* Footer */
+    footer{margin:28px 2px 0; color:var(--muted); font-size:14px; text-align:center; opacity:.9}
+    footer a{ color:var(--primary); text-decoration:none; border-bottom:1px dashed rgba(0,234,255,.35) }
+    footer a:hover{ border-bottom-color: rgba(0,234,255,.7) }
+
+    /* Buttons */
     .btn{
       appearance:none; border:1px solid rgba(255,255,255,.08);
       background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
@@ -99,100 +102,32 @@
       text-shadow: 0 0 10px rgba(0,234,255,.35);
     }
 
-    /* Hero */
-    .hero{ margin:26px 2px 14px }
-    .hero h1{
-      font-family:'Orbitron', sans-serif; font-size: clamp(26px, 3.8vw, 36px);
-      margin:0 0 10px; letter-spacing:.6px;
+    /* Modal (création SPHAIRA) */
+    .modal{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.45); z-index:1000; }
+    .modal[data-open="true"]{ display:grid; }
+    .modal .card{ width:min(700px, 92vw); border-radius:20px; }
+    .modal .card h3{ margin:0 0 8px 0; font-family:'Orbitron',sans-serif; }
+    .modal .row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:10px 0; }
+    .modal label{ display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+    .modal input, .modal select, .modal textarea{
+      width:100%; border-radius:12px; border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.03); color:var(--text); padding:10px 12px; font:inherit;
     }
-    .hero p{ margin:0; color:var(--muted) }
-
-    /* Dashboard grid */
-    .grid{
-      display:grid; gap:16px;
-      grid-template-columns: repeat(12, 1fr);
-      margin-top:18px;
-    }
-    .col-4{ grid-column: span 4 }
-    .col-8{ grid-column: span 8 }
-    @media (max-width: 1000px){
-      .col-8,.col-4{ grid-column: span 12 }
-    }
-
-    .card{
-      position:relative; border-radius: var(--radius); background: rgba(6,10,24,.55);
-      border:1px solid rgba(255,255,255,.07);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .card::before{
-      content:""; position:absolute; inset:0; pointer-events:none;
-      background: radial-gradient(120% 80% at 0% 0%, rgba(0,234,255,.10), transparent 60%);
-      mix-blend-mode: screen;
-    }
-    .card .head{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:16px 16px 10px; border-bottom:1px solid rgba(255,255,255,.06)
-    }
-    .card .title{
-      display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.3px
-    }
-    .chip{
-      font-size:12px; color:var(--primary); border:1px solid rgba(0,234,255,.35);
-      padding:4px 8px; border-radius:999px; background:rgba(0,234,255,.08)
-    }
-    .card .body{ padding:16px }
-    .card .links{ display:flex; flex-wrap:wrap; gap:10px }
-    .link-tile{
-      flex: 1 1 220px; min-height:110px;
-      display:flex; flex-direction:column; justify-content:space-between;
-      padding:14px; border-radius:14px; text-decoration:none; color:var(--text);
-      border:1px solid rgba(255,255,255,.08);
-      background:
-        radial-gradient(160% 140% at 20% 15%, rgba(0,234,255,.10), transparent 45%),
-        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
-    }
-    .link-tile:hover{
-      transform: translateY(-2px);
-      border-color: rgba(0,234,255,.35);
-      box-shadow: 0 12px 28px rgba(0,234,255,.12);
-    }
-    .tile-top{ display:flex; align-items:center; gap:10px }
-    .dot{
-      width:10px; height:10px; border-radius:50%;
-      box-shadow: 0 0 14px rgba(0,234,255,.6), inset 0 0 6px rgba(0,234,255,.6);
-      background: radial-gradient(circle at 40% 40%, var(--primary), #008a96);
-    }
-    .kpi{ font: 800 22px 'Orbitron', sans-serif; letter-spacing:.5px }
-
-    /* Footer */
-    footer{margin:28px 2px 0; color:var(--muted); font-size:14px; text-align:center; opacity:.9}
-    footer a{ color:var(--primary); text-decoration:none; border-bottom:1px dashed rgba(0,234,255,.35) }
-    footer a:hover{ border-bottom-color: rgba(0,234,255,.7) }
+    .modal textarea{ min-height:90px; resize:vertical; }
+    .modal .bar{ display:flex; gap:8px; align-items:center; }
+    .ghost{ background:transparent; border-color:rgba(255,255,255,.12); }
+    .danger{ border-color:#ff5252; }
 
     /* Accessibilité focus */
     a,button{ outline:none }
-    a:focus-visible, .btn:focus-visible, .link-tile:focus-visible{
+    a:focus-visible, .btn:focus-visible, .link-tile:focus-visible, .modal input:focus-visible, .modal select:focus-visible, .modal textarea:focus-visible{
       box-shadow: 0 0 0 3px var(--ring);
     }
   </style>
 </head>
 <body>
   <div class="shell">
-    <header>
-      <a class="brand" href="./">
-        <div class="brand-icon" aria-hidden="true"></div>
-        <div class="brand-title">
-          <span>ATMOS</span><span class="accent">Dashboard</span>
-        </div>
-      </a>
-      <div class="header-actions">
-        <!-- Pas de connexion ici : version nettoyée -->
-        <button class="btn" type="button" onclick="location.href='./docs.html'">Docs</button>
-        <button class="btn btn-primary" type="button" onclick="location.href='./settings.html'">Paramètres</button>
-      </div>
-    </header>
+    <!-- (Bandeau supprimé) -->
 
     <section class="hero" aria-label="Présentation">
       <h1>Bienvenue dans <span style="color:var(--primary)">ATMOS</span></h1>
@@ -212,35 +147,23 @@
           <div class="links">
             <!-- ORIS -->
             <a class="link-tile" href="./ORIS/index.html">
-              <div class="tile-top">
-                <div class="dot" aria-hidden="true"></div>
-                <strong>ORIS — Agenda</strong>
-              </div>
+              <div class="tile-top"><div class="dot" aria-hidden="true"></div><strong>ORIS — Agenda</strong></div>
               <div class="kpi" aria-label="Accéder à ORIS">Ouvrir</div>
             </a>
             <!-- NEXUS -->
             <a class="link-tile" href="./NEXUS/index.html">
-              <div class="tile-top">
-                <div class="dot" aria-hidden="true"></div>
-                <strong>NEXUS — Mails</strong>
-              </div>
+              <div class="tile-top"><div class="dot" aria-hidden="true"></div><strong>NEXUS — Mails</strong></div>
               <div class="kpi" aria-label="Accéder à NEXUS">Ouvrir</div>
             </a>
             <!-- SPHAIRA -->
             <a class="link-tile" href="./SPHAIRA/index.html">
-              <div class="tile-top">
-                <div class="dot" aria-hidden="true"></div>
-                <strong>SPHAIRA — Espace schématique</strong>
-              </div>
+              <div class="tile-top"><div class="dot" aria-hidden="true"></div><strong>SPHAIRA — Espace schématique</strong></div>
               <div class="kpi" aria-label="Accéder à SPHAIRA">Ouvrir</div>
             </a>
-            <!-- (Option) Tâches internes -->
-            <a class="link-tile" href="./tasks/index.html">
-              <div class="tile-top">
-                <div class="dot" aria-hidden="true"></div>
-                <strong>TÂCHES — Liste</strong>
-              </div>
-              <div class="kpi" aria-label="Accéder aux tâches">Ouvrir</div>
+            <!-- ECLIPTICA (ex Tâches — Liste) -->
+            <a class="link-tile" href="https://mistergob.github.io/Atmosphaira/ECLIPTICA/index.html" target="_blank" rel="noopener">
+              <div class="tile-top"><div class="dot" aria-hidden="true"></div><strong>ECLIPTICA</strong></div>
+              <div class="kpi" aria-label="Accéder à ECLIPTICA">Ouvrir</div>
             </a>
           </div>
         </div>
@@ -254,13 +177,13 @@
           </div>
         </div>
         <div class="body" style="display:flex; flex-direction:column; gap:10px">
-          <button class="btn" type="button" onclick="location.href='./ORIS/index.html'">Créer un événement (ORIS)</button>
+          <button class="btn" type="button" id="openCreatorBtn">Créer tâche/objectif (ORIS)</button>
           <button class="btn" type="button" onclick="location.href='./NEXUS/index.html'">Nouveau message (NEXUS)</button>
           <button class="btn" type="button" onclick="location.href='./SPHAIRA/index.html'">Ouvrir le schéma (SPHAIRA)</button>
         </div>
       </div>
 
-      <!-- Carte Aperçu (statique, sans data) -->
+      <!-- Carte Aperçu (dynamique SPHAIRA) -->
       <div class="card col-4" role="region" aria-labelledby="overview-title">
         <div class="head">
           <div class="title" id="overview-title">
@@ -268,17 +191,14 @@
           </div>
         </div>
         <div class="body">
-          <ul style="margin:0; padding-left:18px; line-height:1.8">
-            <li>09:00 — Stand-up équipe</li>
-            <li>11:00 — Appel partenaire</li>
-            <li>14:00 — Sprint SPHAIRA</li>
-            <li>16:30 — Revue NEXUS</li>
+          <ul id="overviewList" style="margin:0; padding-left:18px; line-height:1.8">
+            <li style="color:var(--muted)">Chargement…</li>
           </ul>
-          <p style="color:var(--muted); margin-top:10px">*Aperçu statique pour la version sans connexion.</p>
+          <p style="color:var(--muted); margin-top:10px">Source : SPHAIRA (mêmes clés que dans ORIS).<br/>Les événements Google s’afficheront côté ORIS.</p>
         </div>
       </div>
 
-      <!-- Carte Notes (statique) -->
+      <!-- Carte Notes -->
       <div class="card col-8" role="region" aria-labelledby="notes-title">
         <div class="head">
           <div class="title" id="notes-title">
@@ -297,14 +217,406 @@
 
     <footer>
       ATMOS v1 — build « clean » sans dépendances ni connexion.<br/>
-      <span style="opacity:.85">Astuce&nbsp;: place tes modules dans <code>/oris</code>, <code>/nexus</code>, <code>/sphaira</code> avec chacun leur <code>index.html</code>.</span>
+      <span style="opacity:.85">Astuce : place tes modules dans <code>/ORIS</code>, <code>/NEXUS</code>, <code>/SPHAIRA</code>.</span>
     </footer>
   </div>
 
-  <!--
-    ✅ Version NETTOYÉE : aucun script d’authentification, aucune redirection auto, aucune dépendance inter-module.
-    🔗 Tu peux changer les href si tu gardes tous les fichiers au même niveau (ex: href="./oris.html").
-    🧩 Étape suivante (quand tu voudras) : ré-intégrer une couche SSO au niveau ATMOS (ex: Google OAuth) + partage de session via Storage Access API/postMessage.
-  -->
+  <!-- ===== Modale Création Tâche / Objectif (style ORIS) ===== -->
+  <div id="creatorModal" class="modal" aria-hidden="true" role="dialog" aria-label="Créer tâche/objectif">
+    <div class="card" style="padding:16px">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+        <h3 id="crTitle">Créer (SPHAIRA)</h3>
+        <div class="bar">
+          <button id="saveCreateBtn" class="btn btn-primary">Enregistrer</button>
+          <button id="closeCreateBtn" class="btn">Fermer</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="crType">Type</label>
+          <select id="crType">
+            <option value="task">Tâche</option>
+            <option value="objective">Objectif</option>
+          </select>
+        </div>
+        <div>
+          <label for="crNode">Cercle (SPHAIRA)</label>
+          <select id="crNode"></select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="crTitleInput">Titre</label>
+          <input id="crTitleInput" placeholder="Ex : Appeler M. Paysage">
+        </div>
+        <div>
+          <label for="crDateStart">Début (optionnel)</label>
+          <input id="crDateStart" type="date">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="crDateEnd">Fin / Échéance</label>
+          <input id="crDateEnd" type="date">
+        </div>
+        <div>
+          <label for="crStatus">Statut (optionnel)</label>
+          <input id="crStatus" placeholder="ex : À faire / En cours">
+        </div>
+      </div>
+
+      <div>
+        <label for="crDesc">Description</label>
+        <textarea id="crDesc" placeholder="Détails"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  'use strict';
+
+  /* ==============================
+     PARTAGE SPHAIRA — mêmes clés qu’ORIS
+     (lecture/écriture localStorage)
+     ============================== */
+  const STORAGE_KEYS = [
+    'sphaira:workspaceState:v2',
+    'sphaira:workspaceState:v1',
+    'workspaceState',
+    'sphaira:tasks',
+    'sphaira:tasks:v1'
+  ];
+
+  function loadWorkspaceFromStorage(){
+    for(const key of STORAGE_KEYS){
+      try{
+        const raw = localStorage.getItem(key);
+        if(raw){ const json = JSON.parse(raw); return { json, storageKey:key }; }
+      }catch(_){}
+    }
+    return { json:null, storageKey:null };
+  }
+  function persistSphairaWorkspace(ws){
+    if(!ws || !ws.storageKey || !ws.json) return false;
+    try{ localStorage.setItem(ws.storageKey, JSON.stringify(ws.json)); }catch(_){}
+    try{ localStorage.setItem('sphaira:lastWriteAt', Date.now().toString()); }catch(_){}
+    return true;
+  }
+
+  /* ==============================
+     Utils dates & normalisation (repris d’ORIS)
+     ============================== */
+  const NESTED_DATE_VALUE_KEYS = ['date','start','end','from','to','value'];
+  function toDate(input){
+    if(!input) return null;
+    if(input instanceof Date) return isNaN(input)?null:input;
+    const s = String(input);
+    // 'YYYY-MM-DD' ou ISO
+    if(/^\d{4}-\d{2}-\d{2}/.test(s)){ const d = new Date(s); return isNaN(d)?null:d; }
+    const d = new Date(s); return isNaN(d)?null:d;
+  }
+  function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+  function endOfDay(d){ const x=new Date(d); x.setHours(23,59,59,999); return x; }
+  function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+  function toDateOnlyString(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+  function coerceDateInput(value){
+    if(value === undefined || value === null) return '';
+    if(typeof value === 'string'){
+      const trimmed = value.trim(); if(!trimmed) return '';
+      const m = trimmed.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+      if(m){
+        const [, dd, mm, yyyy, hh, min, ss] = m;
+        const day = Number(dd), month = Number(mm), year = Number(yyyy);
+        if(day>=1&&day<=31&&month>=1&&month<=12){
+          const isoDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+          if(hh!==undefined && min!==undefined){
+            const hour = Number(hh), minute = Number(min), second = ss!==undefined ? Number(ss):0;
+            const d = new Date(`${isoDate}T${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}:${String(second).padStart(2,'0')}`);
+            return isNaN(d)?'':d.toISOString();
+          }
+          return isoDate;
+        }
+      }
+      // ISO direct
+      const d = new Date(trimmed); return isNaN(d)?'':(trimmed.includes('T')?d.toISOString():trimmed);
+    }
+    if(typeof value === 'number'){ const d=new Date(value); return isNaN(d)?'':d.toISOString(); }
+    if(typeof value === 'object'){
+      for(const key of NESTED_DATE_VALUE_KEYS){
+        if(value && typeof value[key] === 'string' && value[key].trim()){ return coerceDateInput(value[key]); }
+      }
+      if(typeof value.year === 'number' && typeof value.month === 'number' && typeof value.day === 'number'){
+        const d = new Date(value.year, Math.max(0, value.month - 1), value.day);
+        if(!Number.isNaN(d.valueOf())){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+      }
+    }
+    return '';
+  }
+
+  const TASK_START_FIELD_CANDIDATES = [
+    'start','startDate','start_date','from','start_time','startTime','begin','beginDate','begin_date',
+    'targetDate','target_date','objectiveDate','objective_date','goalDate','goal_date',
+    'deadline','deadlineDate','deadline_date','date','dueDate','due_date',
+    'startAt','start_at','plannedStart','planned_start','expectedStart','expected_start'
+  ];
+  const TASK_END_FIELD_CANDIDATES = [
+    'end','endDate','end_date','dueDate','due_date','to','end_time','endTime',
+    'targetDate','target_date','objectiveDate','objective_date','goalDate','goal_date',
+    'deadline','deadlineDate','deadline_date','date','finish','finishDate','finish_date',
+    'plannedEnd','planned_end','expectedEnd','expected_end','completionDate','completion_date'
+  ];
+
+  function gatherFieldNames(task, candidates, fallback){
+    const names=[]; const seen=new Set();
+    (candidates||[]).forEach(name=>{
+      if(!name||seen.has(name)) return;
+      if(task && Object.prototype.hasOwnProperty.call(task,name)){ names.push(name); seen.add(name); }
+    });
+    if(!names.length && fallback){ names.push(fallback); }
+    return names;
+  }
+  function pickDateValue(task, candidates){
+    if(!task) return '';
+    for(const key of candidates){
+      if(!key) continue;
+      if(Object.prototype.hasOwnProperty.call(task, key)){
+        const resolved = coerceDateInput(task[key]);
+        if(resolved){ return resolved; }
+      }
+    }
+    return '';
+  }
+
+  function normalizeTask(task, meta={}){
+    const title = task?.title || task?.name || '(Sans titre)';
+    const desc = task?.desc || task?.description || '';
+    const start = pickDateValue(task, TASK_START_FIELD_CANDIDATES);
+    const end = pickDateValue(task, TASK_END_FIELD_CANDIDATES);
+    const status = task?.status || task?.state || task?.progress || meta.status || '';
+    const location = task?.location || task?.place || '';
+    const fields = {
+      title: gatherFieldNames(task, ['title','name'], 'title'),
+      desc: gatherFieldNames(task, ['desc','description'], 'desc'),
+      location: gatherFieldNames(task, ['location','place'], location ? 'location' : ''),
+      start: gatherFieldNames(task, TASK_START_FIELD_CANDIDATES, 'start'),
+      end: gatherFieldNames(task, TASK_END_FIELD_CANDIDATES, 'end'),
+      status: gatherFieldNames(task, ['status','state','progress'], status ? 'status' : ''),
+      color: gatherFieldNames(task, ['color','highlight'], '')
+    };
+    if(!fields.end.length){ fields.end = ['end']; }
+    if(!fields.start.length){ fields.start = ['start']; }
+    return {
+      id: task?.id || `${meta.prefix||'task'}-${Math.random().toString(36).slice(2,9)}`,
+      title, desc, start, end, status, location,
+      nodeName: meta.nodeName || '',
+      color: task?.color || meta.color || '#00EAFF',
+      kind: meta.kind || 'task',
+      _source: task, _container: meta.container || null, _index: meta.index ?? null,
+      _storageKey: meta.storageKey || null, _fields: fields
+    };
+  }
+
+  function extractTasks(ws, storageKey){
+    if(!ws) return [];
+    const tasks=[];
+    const pushTasks = (list, meta={})=>{
+      if(!Array.isArray(list)) return;
+      list.forEach((t, index)=>{ if(!t) return; tasks.push(normalizeTask(t, { ...meta, container:list, index, storageKey })); });
+    };
+    const pushObjectives = (list, meta={})=>{
+      if(!Array.isArray(list)) return;
+      const baseMeta = { ...meta };
+      if(!baseMeta.color){ baseMeta.color = '#39ff14'; }
+      if(Array.isArray(list)){ list.forEach((t, index)=>{ if(!t) return; tasks.push(normalizeTask(t, { ...baseMeta, container:list, index, storageKey, kind:'objective', prefix: (meta.prefix||'objective') })); }); }
+    };
+
+    if(Array.isArray(ws)){ pushTasks(ws, { storageKey }); }
+    if(Array.isArray(ws.tasks)){ pushTasks(ws.tasks, { storageKey }); }
+    if(Array.isArray(ws.objectives)){ pushObjectives(ws.objectives, { storageKey, prefix:'objective', nodeName:'Objectifs' }); }
+
+    if(Array.isArray(ws.nodes)){
+      const nodes = Object.fromEntries(ws.nodes.map(n=>[n.id, { name:n.text||n.title||n.id, color:n.color||'#00EAFF' }]));
+      ws.nodes.forEach((n)=>{
+        const list = Array.isArray(n.tasks) ? n.tasks : null;
+        const meta = { nodeName: nodes[n.id]?.name || n.id, color: nodes[n.id]?.color || '#00EAFF', prefix: `node-${n.id}`, storageKey, container: list };
+        pushTasks(list, meta);
+        if(Array.isArray(n.objectives)){ pushObjectives(n.objectives, { storageKey, prefix: `node-${n.id}-objective`, nodeName: nodes[n.id]?.name || n.id, color: nodes[n.id]?.color }); }
+      });
+    }
+    ['columns','lists','boards'].forEach(key=>{
+      if(Array.isArray(ws[key])){
+        ws[key].forEach((col)=>{
+          const meta = { nodeName: col.name || col.title || '', color: col.color || '#00EAFF', status: col.status || col.name || '', prefix: `${key}-${col.id||col.name||'col'}`, storageKey };
+          const list = Array.isArray(col.tasks) ? col.tasks : Array.isArray(col.cards) ? col.cards : null;
+          pushTasks(list, { ...meta, container:list });
+          if(Array.isArray(col.objectives)){ pushObjectives(col.objectives, { ...meta, prefix: `${key}-${col.id||col.name||'col'}-objective`, nodeName: meta.nodeName || 'Objectifs' }); }
+        });
+      }
+    });
+    return tasks;
+  }
+
+  function taskToEvent(task){
+    const startCandidate = toDate(task.start) || toDate(task.end);
+    if(!startCandidate) return null;
+    const endCandidate = toDate(task.end) || startCandidate;
+    const hasTimeInfo = (task.start && task.start.includes('T')) || (task.end && task.end.includes('T'));
+    const allDay = !hasTimeInfo;
+    const startDate = allDay ? startOfDay(startCandidate) : startCandidate;
+    let endDateRaw = allDay ? startOfDay(addDays(endCandidate, 1)) : endCandidate;
+    if(allDay && endDateRaw <= startDate){ endDateRaw = addDays(startDate, 1); }
+    if(!allDay && endDateRaw < startDate){ endDateRaw = startDate; }
+    const displayEnd = allDay ? addDays(endDateRaw, -1) : endDateRaw;
+    const startRaw = allDay ? toDateOnlyString(startDate) : startDate.toISOString();
+    const endRaw = allDay ? toDateOnlyString(endDateRaw) : endDateRaw.toISOString();
+    const isObjective = task.kind === 'objective';
+    const context = [isObjective ? 'Objectifs SPHAIRA' : 'Tâches SPHAIRA'];
+    if(task.nodeName){ context.push(task.nodeName); }
+    if(task.status){ context.push(task.status); }
+    const baseColor = task.color || (isObjective ? '#39ff14' : '#00EAFF');
+    return {
+      id: task.id, calId: 'sphaira-tasks', calName: context.join(' · '),
+      color: baseColor, summary: task.title || '(Sans titre)', location: task.location || '', description: task.desc || '',
+      startRaw, endRaw, startDate, endDate: displayEnd, allDay, hangoutLink: '', recurring: false, isSphaira:true, isObjective,
+      raw: { task }
+    };
+  }
+
+  /* ==============================
+     Aperçu du jour (SPHAIRA)
+     ============================== */
+  const overviewList = document.getElementById('overviewList');
+
+  function renderToday(){
+    const ws = loadWorkspaceFromStorage();
+    if(!ws.json){
+      overviewList.innerHTML = '<li style="color:var(--muted)">Ouvre SPHAIRA/ECLIPTICA pour initialiser le workspace.</li>';
+      return;
+    }
+    const list = extractTasks(ws.json, ws.storageKey).map(taskToEvent).filter(Boolean);
+    const today = new Date(); const dayStart = startOfDay(today); const dayEnd = endOfDay(today);
+
+    const todays = list.filter(ev => ev.startDate <= dayEnd && ev.endDate >= dayStart)
+                       .sort((a,b)=> (a.allDay===b.allDay?0:(a.allDay? -1:1)) || (a.startDate - b.startDate));
+
+    if(!todays.length){
+      overviewList.innerHTML = '<li style="color:var(--muted)">Aucun objectif ni tâche pour aujourd’hui (SPHAIRA).</li>';
+      return;
+    }
+    overviewList.innerHTML = '';
+    todays.forEach(ev=>{
+      const li = document.createElement('li');
+      const when = ev.allDay ? 'Toute la journée' : `${String(ev.startDate.getHours()).padStart(2,'0')}:${String(ev.startDate.getMinutes()).padStart(2,'0')}`;
+      const badge = ev.isObjective ? '<span style="font-size:11px; color:#39ff14">[Objectif]</span> ' : '<span style="font-size:11px; color:#00eaff">[Tâche]</span> ';
+      li.innerHTML = `${badge}<strong>${escapeHtml(ev.summary)}</strong> — ${when}${ev.raw?.task?.nodeName? ' · '+escapeHtml(ev.raw.task.nodeName):''}`;
+      overviewList.appendChild(li);
+    });
+  }
+
+  // petits helpers
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // rafraîchissement : au chargement, sur storage et heartbeat
+  renderToday();
+  window.addEventListener('storage', (e)=>{
+    if(e && typeof e.key === 'string' && STORAGE_KEYS.includes(e.key)) renderToday();
+    if(e && e.key === 'sphaira:lastWriteAt') renderToday();
+  });
+  try{
+    const bc = new BroadcastChannel('ORIS_HEARTBEAT');
+    bc.onmessage = ()=> renderToday();
+  }catch(_){}
+
+  /* ==============================
+     Création Tâche/Objectif (SPHAIRA)
+     ============================== */
+  const creatorModal = document.getElementById('creatorModal');
+  const openCreatorBtn = document.getElementById('openCreatorBtn');
+  const closeCreateBtn = document.getElementById('closeCreateBtn');
+  const saveCreateBtn  = document.getElementById('saveCreateBtn');
+
+  const crType = document.getElementById('crType');
+  const crNode = document.getElementById('crNode');
+  const crTitleInput = document.getElementById('crTitleInput');
+  const crDateStart = document.getElementById('crDateStart');
+  const crDateEnd = document.getElementById('crDateEnd');
+  const crDesc = document.getElementById('crDesc');
+  const crStatus = document.getElementById('crStatus');
+
+  function openCreator(){
+    // peupler la liste des cercles principaux (comme ECLIPTICA)
+    crNode.innerHTML = '';
+    const ws = loadWorkspaceFromStorage();
+    const nodes = Array.isArray(ws.json?.nodes) ? ws.json.nodes : [];
+    // heuristique "cercle principal" : taille >= 110 (comme ECLIPTICA) si dispo, sinon tous
+    const BIG_SIZE = 110;
+    const mains = nodes.filter(n=> typeof n.size==='number' ? n.size>=BIG_SIZE : true);
+    const list = mains.length ? mains : nodes;
+    if(!list.length){
+      const opt = document.createElement('option'); opt.value=''; opt.textContent='— Aucun (ouvre SPHAIRA d’abord)'; crNode.appendChild(opt);
+      saveCreateBtn.disabled = true;
+    }else{
+      list.forEach(n=>{
+        const opt = document.createElement('option'); opt.value = n.id; opt.textContent = n.text || n.title || n.name || n.id;
+        crNode.appendChild(opt);
+      });
+      saveCreateBtn.disabled = false;
+    }
+    crTitleInput.value=''; crDateStart.value=''; crDateEnd.value=''; crDesc.value=''; crStatus.value='';
+    creatorModal.dataset.open = 'true'; creatorModal.setAttribute('aria-hidden','false');
+  }
+  function closeCreator(){
+    creatorModal.dataset.open = 'false'; creatorModal.setAttribute('aria-hidden','true');
+  }
+
+  function ensureArraysOnNode(node){
+    if(!node) return;
+    if(!Array.isArray(node._tasks) && Array.isArray(node.tasks)) node._tasks = node.tasks;
+    if(!Array.isArray(node._objectives) && Array.isArray(node.objectives)) node._objectives = node.objectives;
+    if(!Array.isArray(node._tasks)) node._tasks = [];
+    if(!Array.isArray(node._objectives)) node._objectives = [];
+    node.tasks = node._tasks; node.objectives = node._objectives;
+  }
+
+  function saveCreator(){
+    const ws = loadWorkspaceFromStorage();
+    if(!ws.json){ alert('Workspace SPHAIRA introuvable. Ouvre SPHAIRA/ECLIPTICA d’abord.'); return; }
+    const nodeId = crNode.value;
+    const node = Array.isArray(ws.json.nodes) ? ws.json.nodes.find(n=>String(n.id)===String(nodeId)) : null;
+    if(!node){ alert('Sélectionne un cercle SPHAIRA.'); return; }
+    ensureArraysOnNode(node);
+
+    const title = (crTitleInput.value||'').trim();
+    const start = crDateStart.value||'';
+    const end = crDateEnd.value||'';
+    const desc = (crDesc.value||'').trim();
+    const status = (crStatus.value||'').trim();
+
+    if(!title){ alert('Titre requis.'); return; }
+    if(!end){ alert('Échéance/Fin requise.'); return; }
+
+    if(crType.value === 'objective'){
+      const id = 'o'+Date.now().toString(36).slice(2,8);
+      const objective = { id, title, due:end, desc, completed:false, completedAt:null, taskIds:[] };
+      node._objectives.push(objective);
+    }else{
+      const id = 't'+Date.now().toString(36).slice(2,8);
+      const task = { id, title, desc, start:start||'', end:end, status, done:false, objectiveIds:[] };
+      node._tasks.push(task);
+    }
+
+    if(!persistSphairaWorkspace(ws)){ alert('Échec enregistrement dans SPHAIRA.'); return; }
+    closeCreator(); renderToday();
+  }
+
+  openCreatorBtn.addEventListener('click', openCreator);
+  closeCreateBtn.addEventListener('click', closeCreator);
+  saveCreateBtn.addEventListener('click', saveCreator);
+  creatorModal.addEventListener('click', (e)=>{ if(e.target===creatorModal) closeCreator(); });
+  </script>
 </body>
 </html>
