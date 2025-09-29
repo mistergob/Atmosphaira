@@ -1307,6 +1307,15 @@
     return '';
   }
 
+  function normalizeStatusText(status){
+    if(status===undefined || status===null) return '';
+    const str = String(status).trim();
+    if(!str) return '';
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
   function normalizeTask(task, meta={}){
     const title = task?.title || task?.name || '(Sans titre)';
     const desc = task?.desc || task?.description || '';
@@ -1314,6 +1323,7 @@
     const end = pickDateValue(task, TASK_END_FIELD_CANDIDATES);
     const status = task?.status || task?.state || task?.progress || meta.status || '';
     const location = task?.location || task?.place || '';
+    const done = task?.done ?? task?.completed ?? task?.isDone ?? false;
     const fields = {
       title: gatherFieldNames(task, ['title','name'], 'title'),
       desc: gatherFieldNames(task, ['desc','description'], 'desc'),
@@ -1331,9 +1341,21 @@
       nodeName: meta.nodeName || '',
       color: task?.color || meta.color || '#00EAFF',
       kind: meta.kind || 'task',
+      done: !!done,
+      statusText: normalizeStatusText(status),
       _source: task, _container: meta.container || null, _index: meta.index ?? null,
       _storageKey: meta.storageKey || null, _fields: fields
     };
+  }
+  function isTaskCompleted(task){
+    if(!task) return false;
+    if(task.done) return true;
+    const status = task.statusText || normalizeStatusText(task.status);
+    if(!status) return false;
+    if(status.startsWith('valide')) return true;
+    if(status.startsWith('termine')) return true;
+    if(status.startsWith('complete')) return true;
+    return false;
   }
   function extractTasks(ws, storageKey){
     if(!ws) return [];
@@ -1391,6 +1413,7 @@
     return tasks;
   }
   function taskToEvent(task){
+    if(isTaskCompleted(task)) return null;
     const startCandidate = toDate(task.start) || toDate(task.end);
     if(!startCandidate) return null;
     const endCandidate = toDate(task.end) || startCandidate;
@@ -1486,8 +1509,9 @@
     const { json, storageKey } = loadWorkspaceFromStorage();
     sphairaWorkspace = { json, storageKey };
     const list = json ? extractTasks(json, storageKey) : [];
-    list.sort((a,b)=> (a.start||'').localeCompare(b.start||'') || a.title.localeCompare(b.title));
-    sphairaEvents = list.map(taskToEvent).filter(Boolean);
+    const filteredList = list.filter(task=> !isTaskCompleted(task));
+    filteredList.sort((a,b)=> (a.start||'').localeCompare(b.start||'') || a.title.localeCompare(b.title));
+    sphairaEvents = filteredList.map(taskToEvent).filter(Boolean);
     const eventById = new Map(sphairaEvents.map(ev=>[ev.id, ev]));
 
     if(!calendarSelect.querySelector(`option[value="${SPHAIRA_CALENDAR_ID}"]`)){
@@ -1497,11 +1521,11 @@
       calListEl.appendChild(createCalendarToggle(SPHAIRA_CALENDAR, true));
     }
 
-    if(!list.length){
+    if(!filteredList.length){
       taskListEl.innerHTML = '<div class="status">Aucune tâche ou objectif trouvé.</div>';
     }else{
       taskListEl.innerHTML = '';
-      list.forEach(t=>{
+      filteredList.forEach(t=>{
         const el = document.createElement('div');
         const isObjective = t.kind === 'objective';
         const badge = isObjective ? '<span class="badge-objective">Objectif</span><br/>' : '';

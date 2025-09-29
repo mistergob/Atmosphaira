@@ -445,8 +445,17 @@
       </div>
 
       <h3>Liste des tâches</h3>
+      <div class="actions"><button id="tasksShowCompleted" class="btn secondary" type="button">Voir les tâches terminées</button></div>
       <div id="tasksContainer" class="list"></div>
       <div class="actions"><button id="tasksClose" class="btn">Fermer</button></div>
+    </div>
+  </div>
+
+  <div id="completedTasksModal" class="modal" aria-hidden="true">
+    <div class="card">
+      <h3>Tâches terminées</h3>
+      <div id="completedTasksContainer" class="list"></div>
+      <div class="actions"><button id="completedTasksClose" class="btn">Fermer</button></div>
     </div>
   </div>
 
@@ -503,6 +512,10 @@ const homeBtn=document.getElementById('homeBtn');
 const wireModeBtn=document.getElementById('wireModeBtn');
 const tasksBtn=document.getElementById('tasksBtn');
 const objectivesBtn=document.getElementById('objectivesBtn');
+const tasksShowCompletedBtn=document.getElementById('tasksShowCompleted');
+const completedTasksModal=document.getElementById('completedTasksModal');
+const completedTasksContainer=document.getElementById('completedTasksContainer');
+const completedTasksClose=document.getElementById('completedTasksClose');
 
 /* Menu 3 controls */
 const titleInput3=document.getElementById('titleInput3');
@@ -614,6 +627,27 @@ const centerInWorld=(el)=>({x:el.offsetLeft+el.offsetWidth/2,y:el.offsetTop+el.o
 function applyCamera(){ world.style.transform=`translate(${camera.x}px, ${camera.y}px) scale(${camera.z})`; }
 function pointerToWorld(e){ const sr=stageRect(); return {wx:(e.clientX-sr.left-camera.x)/camera.z, wy:(e.clientY-sr.top-camera.y)/camera.z}; }
 const isModalOpen=(m)=>m && m.style.display==='flex';
+
+function normalizeStatus(value){
+  if(value===undefined||value===null) return '';
+  const str=String(value).trim();
+  if(!str) return '';
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+function isTaskMarkedDone(task){
+  if(!task) return false;
+  if(task.done) return true;
+  const status=normalizeStatus(task.status);
+  if(!status) return false;
+  if(status.startsWith('valide')) return true;
+  if(status.startsWith('termine')) return true;
+  if(status.startsWith('complete')) return true;
+  return false;
+}
+function refreshTaskLists(){
+  if(isModalOpen(tasksModal)) renderGlobalTasksList();
+  if(isModalOpen(completedTasksModal)) renderCompletedTasksList();
+}
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
 function getNodeId(node){
@@ -913,7 +947,7 @@ function deleteTaskFromNode(node, taskId){
   updateTaskBadge(node); updateObjectiveBadge(node); recomputeAllObjectives(node);
   touched.forEach(n=>{ if(n!==node) recomputeAllObjectives(n); });
   if(taskEditorNode===node && isModalOpen(taskEditor)) renderNodeTasksList();
-  if(isModalOpen(tasksModal)) renderGlobalTasksList();
+  refreshTaskLists();
   if(objectiveEditorNode===node && isModalOpen(objectiveEditor)) renderObjectiveEditor();
   if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
 }
@@ -1296,7 +1330,7 @@ function renderNodeTasksList(){
         e.stopPropagation();
         updateTaskOnNode(node, t.id, {done:true});
         renderNodeTasksList();
-        if(isModalOpen(tasksModal)) renderGlobalTasksList();
+        refreshTaskLists();
         if(isModalOpen(objectiveEditor)) renderObjectiveEditor();
         if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
       });
@@ -1324,7 +1358,7 @@ function renderNodeTasksList(){
         updateTaskOnNode(node, t.id, { objectiveIds: val ? [val] : [] });
         renderNodeTasksList();
         renderTaskObjectiveSelect();
-        if(isModalOpen(tasksModal)) renderGlobalTasksList();
+        refreshTaskLists();
         if(isModalOpen(objectiveEditor)) renderObjectiveEditor();
         if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
       });
@@ -1341,7 +1375,7 @@ taskSave.addEventListener('click',()=>{
   const payload=selectedObjectiveId ? [selectedObjectiveId] : [];
   if(editingTaskId){ updateTaskOnNode(currentNode, editingTaskId, {title:t, desc:d, start:s, end:e, objectiveIds:payload}); editingTaskId=null; }
   else{ const ok=addTaskToNode(currentNode, t, d, s, e, payload); if(!ok) return; }
-  renderNodeTasksList(); renderTaskObjectiveSelect(); if(isModalOpen(tasksModal)) renderGlobalTasksList();
+renderNodeTasksList(); renderTaskObjectiveSelect(); refreshTaskLists();
   if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
   taskTitle.value=''; taskDesc.value=''; taskStart.value=''; taskEnd.value=''; taskTitle.focus();
 });
@@ -1352,6 +1386,9 @@ taskEditor.addEventListener('click',(e)=>{ if(e.target===taskEditor) closeTaskEd
 tasksBtn.addEventListener('click', openTasksListModal);
 tasksClose.addEventListener('click', closeTasksListModal);
 tasksModal.addEventListener('click',(e)=>{ if(e.target===tasksModal) closeTasksListModal(); });
+if(tasksShowCompletedBtn){ tasksShowCompletedBtn.addEventListener('click', openCompletedTasksModal); }
+if(completedTasksClose){ completedTasksClose.addEventListener('click', closeCompletedTasksModal); }
+if(completedTasksModal){ completedTasksModal.addEventListener('click',(e)=>{ if(e.target===completedTasksModal) closeCompletedTasksModal(); }); }
 function gatherAllTasks(){
   const items=[];
   world.querySelectorAll('.node').forEach(n=>{
@@ -1362,8 +1399,9 @@ function gatherAllTasks(){
   return items;
 }
 function renderGlobalTasksList(){
-  const items=gatherAllTasks(); tasksContainer.innerHTML='';
-  if(items.length===0){ const empty=document.createElement('div'); empty.className='task-item'; empty.textContent='Aucune tâche.'; tasksContainer.appendChild(empty); return; }
+  const items=gatherAllTasks().filter(({task})=>!isTaskMarkedDone(task));
+  tasksContainer.innerHTML='';
+  if(items.length===0){ const empty=document.createElement('div'); empty.className='task-item'; empty.textContent='Aucune tâche active.'; tasksContainer.appendChild(empty); return; }
   const objectiveCount=gatherAllObjectives().length;
   items.forEach(({node,nodeName,task})=>{
     ensureObjArrays(node);
@@ -1418,7 +1456,7 @@ function renderGlobalTasksList(){
       validateBtn.addEventListener('click',(e)=>{
         e.stopPropagation();
         updateTaskOnNode(node, task.id, {done:true});
-        renderGlobalTasksList();
+        refreshTaskLists();
         if(taskEditorNode===node && isModalOpen(taskEditor)) renderNodeTasksList();
         if(isModalOpen(objectiveEditor)) renderObjectiveEditor();
         if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
@@ -1451,7 +1489,7 @@ function renderGlobalTasksList(){
         event.stopPropagation();
         const val=event.target.value;
         updateTaskOnNode(node, task.id, { objectiveIds: val ? [val] : [] });
-        renderGlobalTasksList();
+        refreshTaskLists();
         if(taskEditorNode===node && isModalOpen(taskEditor)) renderNodeTasksList();
         if(isModalOpen(objectiveEditor)) renderObjectiveEditor();
         if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
@@ -1460,8 +1498,70 @@ function renderGlobalTasksList(){
     tasksContainer.appendChild(wrapper);
   });
 }
+function renderCompletedTasksList(){
+  const items=gatherAllTasks().filter(({task})=>isTaskMarkedDone(task));
+  completedTasksContainer.innerHTML='';
+  if(items.length===0){ const empty=document.createElement('div'); empty.className='task-item'; empty.textContent='Aucune tâche terminée.'; completedTasksContainer.appendChild(empty); return; }
+  items.forEach(({node,nodeName,task})=>{
+    ensureObjArrays(node);
+    const col=toHex(getComputedStyle(node).backgroundColor)||'#00EAFF';
+    const wrapper=document.createElement('div'); wrapper.className='task-item';
+    const titleRaw=escapeHtml(task.title);
+    const objectiveDetails=(task.objectiveIds||[]).map(ref=>resolveObjectiveRef(ref, node)).filter(Boolean);
+    const objectiveNames=objectiveDetails.map(({node:objNode,objective})=>{
+      const title=escapeHtml(objective.title||'Objectif');
+      if(objNode===node) return title;
+      return `${title} <span style="opacity:.7">(${escapeHtml(getNodeName(objNode))})</span>`;
+    });
+    const metaBadges=[`<span class="badge badge-node"><span class="task-dot" style="--dot:${col}"></span>${escapeHtml(nodeName)}</span>`];
+    if(task.start || task.end){ metaBadges.push(`<span class="badge badge-date">${escapeHtml(fmtRange(task.start,task.end))}</span>`); }
+    objectiveNames.forEach(name=>metaBadges.push(`<span class="badge badge-objective">${name}</span>`));
+    const metaHtml=metaBadges.length ? `<div class="task-meta">${metaBadges.join('')}</div>` : '';
+    const descHtml=task.desc ? `
+      <div class="task-desc" hidden>${escapeHtml(task.desc)}</div>
+      <button type="button" class="task-toggle" aria-expanded="false">Afficher la note</button>
+    ` : '';
+    wrapper.innerHTML=`
+      <div class="task-row">
+        <div class="task-main">
+          <span class="task-title">
+            <span class="task-icon">⭐</span>
+            <span class="task-name"><del>${titleRaw}</del></span>
+          </span>
+        </div>
+        <div class="task-actions">
+          <span class="btn-validate done" aria-hidden="true">Validée</span>
+        </div>
+      </div>
+      ${metaHtml}
+      ${descHtml}
+    `;
+    wrapper.addEventListener('click',(event)=>{
+      if(event.target.closest('.task-toggle')) return;
+      closeCompletedTasksModal();
+      closeTasksListModal();
+      setCurrentNode(node,{preserveMenu2:true});
+      centerOnNode(node);
+    });
+    const toggleBtn=wrapper.querySelector('.task-toggle');
+    const descEl=wrapper.querySelector('.task-desc');
+    if(toggleBtn && descEl){
+      toggleBtn.addEventListener('click',(event)=>{
+        event.stopPropagation();
+        const expanded=toggleBtn.getAttribute('aria-expanded')==='true';
+        const next=!expanded;
+        descEl.hidden=!next;
+        toggleBtn.setAttribute('aria-expanded', next?'true':'false');
+        toggleBtn.textContent=next?'Masquer la note':'Afficher la note';
+      });
+    }
+    completedTasksContainer.appendChild(wrapper);
+  });
+}
 function openTasksListModal(){ populateTaskGlobalNodeSelect(); renderTaskGlobalObjectiveSelect(); renderGlobalTasksList(); tasksModal.style.display='flex'; tasksModal.setAttribute('aria-hidden','false'); if(!taskGlobalTitle.value) taskGlobalTitle.focus(); }
 function closeTasksListModal(){ tasksModal.style.display='none'; tasksModal.setAttribute('aria-hidden','true'); }
+function openCompletedTasksModal(){ renderCompletedTasksList(); completedTasksModal.style.display='flex'; completedTasksModal.setAttribute('aria-hidden','false'); }
+function closeCompletedTasksModal(){ completedTasksModal.style.display='none'; completedTasksModal.setAttribute('aria-hidden','true'); }
 function populateTaskGlobalNodeSelect(){
   const options=[];
   world.querySelectorAll('.node').forEach(n=>{ const id=n.dataset.id; const name=n.querySelector('.label')?.textContent?.trim() || id; options.push({id,name}); });
@@ -1487,7 +1587,7 @@ taskGlobalSave.addEventListener('click',()=>{
   if(s && e && s>e){ alert('La date de début doit précéder la date de fin.'); return; }
   const selectedObjectiveId=getSelectedObjectiveId(taskGlobalObjectiveSelect);
   const ok=addTaskToNode(node, t, taskGlobalDesc.value.trim(), s, e, selectedObjectiveId?[selectedObjectiveId]:[]); if(!ok) return;
-  renderGlobalTasksList(); if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
+  refreshTaskLists(); if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
   clearGlobalTaskForm();
 });
 taskGlobalReset.addEventListener('click', clearGlobalTaskForm);
@@ -1609,7 +1709,7 @@ function renderObjectiveEditor(){
         affectedNodes.forEach(n=>updateTaskBadge(n));
         saveState();
         if(taskEditorNode && isModalOpen(taskEditor)){ renderNodeTasksList(); renderTaskObjectiveSelect(); }
-        if(isModalOpen(tasksModal)) renderGlobalTasksList();
+        refreshTaskLists();
         affectedNodes.forEach(n=>{ if(n!==node) recomputeAllObjectives(n); });
       }else{
         updateObjectiveOnNode(node, o.id, { completed: !o.completed });
@@ -1727,7 +1827,7 @@ function renderGlobalObjectivesList(){
         affectedNodes.forEach(n=>updateTaskBadge(n));
         saveState();
         if(taskEditorNode && isModalOpen(taskEditor)){ renderNodeTasksList(); renderTaskObjectiveSelect(); }
-        if(isModalOpen(tasksModal)) renderGlobalTasksList();
+        refreshTaskLists();
         affectedNodes.forEach(n=>{ if(n!==node) recomputeAllObjectives(n); });
       }else{
         updateObjectiveOnNode(node, o.id, { completed: !o.completed });
