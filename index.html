@@ -94,6 +94,26 @@
       transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
     }
     .btn:hover{ transform: translateY(-1px); border-color: rgba(0,234,255,.4); box-shadow: 0 8px 24px rgba(0,234,255,.15)}
+    .bar-chart{
+      display:flex; align-items:flex-end; gap:12px; min-height:160px;
+      border:1px dashed rgba(255,255,255,.12); border-radius:12px;
+      padding:16px; background:rgba(255,255,255,.02); position:relative;
+    }
+    .bar-chart::after{
+      content:""; position:absolute; inset:16px; border-radius:10px; pointer-events:none;
+      background: radial-gradient(120% 100% at 20% 0%, rgba(0,234,255,.08), transparent 60%); opacity:.4;
+    }
+    .bar-chart .bar{
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:8px;
+      position:relative; z-index:1; height:100%; justify-content:flex-end;
+    }
+    .bar-chart .bar-bar{
+      width:100%; border-radius:10px; background: linear-gradient(180deg, rgba(0,234,255,.6), rgba(0,234,255,.1));
+      box-shadow:0 6px 16px rgba(0,234,255,.25); transition: filter .2s ease, transform .2s ease;
+    }
+    .bar-chart .bar:hover .bar-bar{ filter: drop-shadow(0 0 10px rgba(0,234,255,.6)); transform: translateY(-2px); }
+    .bar-chart .bar-value{ font-size:12px; color:#e6f7ff; font-weight:600; font-family:'Orbitron', sans-serif; letter-spacing:.04em; margin-bottom:auto; }
+    .bar-chart .bar-label{ font-size:12px; color:var(--muted); text-transform:capitalize; letter-spacing:.03em; margin-top:6px; }
     .btn-primary{
       background:
         radial-gradient(120% 140% at 20% 10%, rgba(0,234,255,.25), transparent 40%),
@@ -114,6 +134,13 @@
       background:rgba(255,255,255,.03); color:var(--text); padding:10px 12px; font:inherit;
     }
     .modal textarea{ min-height:90px; resize:vertical; }
+    .editor-lite{
+      min-height:160px; border:1px solid rgba(255,255,255,.12);
+      border-radius:12px; padding:12px; background:rgba(255,255,255,.03);
+      outline:none; font:inherit; color:var(--text);
+      white-space:pre-wrap; overflow-y:auto;
+    }
+    .editor-lite:focus-visible{ box-shadow:0 0 0 3px var(--ring); }
     .modal .bar{ display:flex; gap:8px; align-items:center; }
     .ghost{ background:transparent; border-color:rgba(255,255,255,.12); }
     .danger{ border-color:#ff5252; }
@@ -181,17 +208,17 @@
         <div class="body">
           <div class="links">
             <!-- ORIS -->
-            <a class="link-tile" href="./ORIS/index.html">
+            <a class="link-tile" href="./ORIS/index.html" target="_blank" rel="noopener">
               <div class="tile-top"><div class="dot" aria-hidden="true"></div><strong>ORIS — Agenda</strong></div>
               <div class="kpi" aria-label="Accéder à ORIS">Ouvrir</div>
             </a>
             <!-- NEXUS -->
-            <a class="link-tile" href="./NEXUS/index.html">
+            <a class="link-tile" href="./NEXUS/index.html" target="_blank" rel="noopener">
               <div class="tile-top"><div class="dot" aria-hidden="true"></div><strong>NEXUS — Mails</strong></div>
               <div class="kpi" aria-label="Accéder à NEXUS">Ouvrir</div>
             </a>
             <!-- SPHAIRA -->
-            <a class="link-tile" href="./SPHAIRA/index.html">
+            <a class="link-tile" href="./SPHAIRA/index.html" target="_blank" rel="noopener">
               <div class="tile-top"><div class="dot" aria-hidden="true"></div><strong>SPHAIRA — Espace schématique</strong></div>
               <div class="kpi" aria-label="Accéder à SPHAIRA">Ouvrir</div>
             </a>
@@ -213,8 +240,8 @@
         </div>
         <div class="body" style="display:flex; flex-direction:column; gap:10px">
           <button class="btn" type="button" id="openCreatorBtn">Créer tâche/objectif (ORIS)</button>
-          <button class="btn" type="button" onclick="location.href='./NEXUS/index.html'">Nouveau message (NEXUS)</button>
-          <button class="btn" type="button" onclick="location.href='./SPHAIRA/index.html'">Ouvrir le schéma (SPHAIRA)</button>
+          <button class="btn" type="button" id="openComposeBtn">Nouveau message (NEXUS)</button>
+          <button class="btn" type="button" id="openSphairaBtn">Ouvrir le schéma (SPHAIRA)</button>
         </div>
       </div>
 
@@ -233,19 +260,18 @@
         </div>
       </div>
 
-      <!-- Carte Notes -->
+      <!-- Carte Statistiques validations -->
       <div class="card col-8" role="region" aria-labelledby="notes-title">
         <div class="head">
           <div class="title" id="notes-title">
-            <span style="color:var(--accent)">●</span> Notes rapides
+            <span style="color:var(--accent)">●</span> Validations de la semaine
           </div>
         </div>
         <div class="body">
-          <div contenteditable="true" spellcheck="false"
-               style="min-height:120px; border:1px dashed rgba(255,255,255,.12); border-radius:12px; padding:12px; background:rgba(255,255,255,.02)">
-            Écris ici des idées à la volée… (contenu non sauvegardé dans cette version)
+          <div id="weeklyChart" class="bar-chart" role="img" aria-label="Histogramme des tâches validées cette semaine">
+            <p style="color:var(--muted); margin:0">Chargement…</p>
           </div>
-          <p style="color:var(--muted); margin-top:10px">*Pas de stockage local pour garder le code 100% neutre.</p>
+          <p id="weeklyChartSummary" style="color:var(--muted); margin-top:10px"></p>
         </div>
       </div>
     </section>
@@ -310,6 +336,62 @@
     </div>
   </div>
 
+  <!-- ===== Modale Composition message (style NEXUS) ===== -->
+  <div id="composeModal" class="modal" aria-hidden="true" role="dialog" aria-label="Composer un message">
+    <div class="card" style="padding:16px; width:min(760px, 92vw)">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+        <h3 style="margin:0">Composer un message</h3>
+        <button id="closeComposeBtn" class="btn ghost" type="button">Fermer</button>
+      </div>
+
+      <p style="color:var(--muted); margin:8px 0 16px">Rédige ton mail comme dans NEXUS et choisis l’expéditeur avant de l’envoyer.</p>
+
+      <div class="row">
+        <div>
+          <label for="composeFrom">Depuis</label>
+          <select id="composeFrom">
+            <option value="google">Compte principal — Google</option>
+            <option value="outlook">Compte secondaire — Outlook</option>
+            <option value="autre">Alias personnalisé</option>
+          </select>
+        </div>
+        <div>
+          <label for="composeTo">Vers</label>
+          <input id="composeTo" type="email" placeholder="destinataire@example.com">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="composeCc">Copie (CC)</label>
+          <input id="composeCc" type="text" placeholder="(optionnel)">
+        </div>
+        <div>
+          <label for="composeBcc">Copie cachée (CCI)</label>
+          <input id="composeBcc" type="text" placeholder="(optionnel)">
+        </div>
+      </div>
+
+      <div>
+        <label for="composeSubject">Objet</label>
+        <input id="composeSubject" type="text" placeholder="Objet du message">
+      </div>
+
+      <div style="margin-top:12px">
+        <label for="composeBody">Contenu</label>
+        <div id="composeBody" class="editor-lite" contenteditable="true" spellcheck="true" aria-label="Contenu du message"></div>
+      </div>
+
+      <div class="bar" style="margin-top:16px; justify-content:space-between; align-items:center">
+        <span id="composeStatus" style="color:var(--muted)"></span>
+        <div style="display:flex; gap:8px">
+          <button id="clearComposeBtn" class="btn ghost" type="button">Effacer</button>
+          <button id="sendComposeBtn" class="btn btn-primary" type="button">Préparer l’envoi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
   'use strict';
 
@@ -357,6 +439,20 @@
   function endOfDay(d){ const x=new Date(d); x.setHours(23,59,59,999); return x; }
   function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
   function toDateOnlyString(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function startOfWeek(d){
+    const x=startOfDay(d);
+    const day=x.getDay();
+    const diff=day===0?-6:1-day;
+    x.setDate(x.getDate()+diff);
+    return x;
+  }
+  function endOfWeek(d){
+    const start=startOfWeek(d);
+    return addDays(start,7);
+  }
+  function formatShortDate(d){
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
 
   function coerceDateInput(value){
     if(value === undefined || value === null) return '';
@@ -433,6 +529,7 @@
     const end = pickDateValue(task, TASK_END_FIELD_CANDIDATES);
     const status = task?.status || task?.state || task?.progress || meta.status || '';
     const location = task?.location || task?.place || '';
+    const done = task?.done === true || task?.completed === true || task?.isDone === true || String(status||'').toLowerCase() === 'done';
     const fields = {
       title: gatherFieldNames(task, ['title','name'], 'title'),
       desc: gatherFieldNames(task, ['desc','description'], 'desc'),
@@ -450,6 +547,7 @@
       nodeName: meta.nodeName || '',
       color: task?.color || meta.color || '#00EAFF',
       kind: meta.kind || 'task',
+      done,
       _source: task, _container: meta.container || null, _index: meta.index ?? null,
       _storageKey: meta.storageKey || null, _fields: fields
     };
@@ -525,14 +623,19 @@
      Aperçu du jour (SPHAIRA)
      ============================== */
   const overviewList = document.getElementById('overviewList');
+  const weeklyChart = document.getElementById('weeklyChart');
+  const weeklyChartSummary = document.getElementById('weeklyChartSummary');
 
-  function renderToday(){
-    const ws = loadWorkspaceFromStorage();
-    if(!ws.json){
+  function renderToday(wsSnapshot){
+    const ws = wsSnapshot || loadWorkspaceFromStorage();
+    if(!ws || !ws.json){
       overviewList.innerHTML = '<li style="color:var(--muted)">Ouvre SPHAIRA/ECLIPTICA pour initialiser le workspace.</li>';
       return;
     }
-    const list = extractTasks(ws.json, ws.storageKey).map(taskToEvent).filter(Boolean);
+    const list = extractTasks(ws.json, ws.storageKey)
+      .filter(task=>!task.done)
+      .map(taskToEvent)
+      .filter(Boolean);
     const today = new Date(); const dayStart = startOfDay(today); const dayEnd = endOfDay(today);
 
     const todays = list.filter(ev => ev.startDate <= dayEnd && ev.endDate >= dayStart)
@@ -552,19 +655,175 @@
     });
   }
 
+  function renderWeeklyChart(wsSnapshot){
+    if(!weeklyChart) return;
+    const ws = wsSnapshot || loadWorkspaceFromStorage();
+    if(!ws || !ws.json){
+      weeklyChart.innerHTML = '<p style="color:var(--muted); margin:0">Ouvre SPHAIRA/ECLIPTICA pour initialiser le workspace.</p>';
+      if(weeklyChartSummary) weeklyChartSummary.textContent = '';
+      return;
+    }
+    const tasks = extractTasks(ws.json, ws.storageKey).filter(task=>task.done);
+    const now = new Date();
+    const weekStart = startOfWeek(now);
+    const weekEnd = endOfWeek(now);
+    const days = Array.from({length:7}, (_,idx)=> addDays(weekStart, idx));
+    const counts = Array(7).fill(0);
+    tasks.forEach(task=>{
+      const src = task._source || {};
+      const doneValue = src.doneAt || src.completedAt || src.completionDate || src.validatedAt || task.end || task.start || '';
+      const doneDate = toDate(doneValue);
+      if(!doneDate) return;
+      const normalized = startOfDay(doneDate);
+      if(normalized >= weekStart && normalized < weekEnd){
+        const slot = Math.floor((normalized - weekStart) / (24*60*60*1000));
+        if(slot>=0 && slot<7){ counts[slot] += 1; }
+      }
+    });
+    const max = Math.max(0, ...counts);
+    weeklyChart.innerHTML = '';
+    const labels = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    counts.forEach((count, idx)=>{
+      const wrapper = document.createElement('div'); wrapper.className = 'bar';
+      const valueEl = document.createElement('div'); valueEl.className = 'bar-value'; valueEl.textContent = String(count);
+      const barEl = document.createElement('div'); barEl.className = 'bar-bar';
+      const percent = max>0 ? Math.round((count/max)*100) : 0;
+      const height = count>0 ? Math.max(12, percent) : 4;
+      barEl.style.height = `${height}%`;
+      const labelEl = document.createElement('div'); labelEl.className = 'bar-label';
+      const day = days[idx];
+      labelEl.textContent = labels[day.getDay()] || '';
+      wrapper.appendChild(valueEl);
+      wrapper.appendChild(barEl);
+      wrapper.appendChild(labelEl);
+      weeklyChart.appendChild(wrapper);
+    });
+    if(weeklyChartSummary){
+      const total = counts.reduce((acc,val)=>acc+val,0);
+      const rangeText = `${formatShortDate(days[0])} → ${formatShortDate(days[6])}`;
+      weeklyChartSummary.textContent = total>0
+        ? `${total} tâche${total>1?'s':''} validée${total>1?'s':''} du ${rangeText}.`
+        : `Aucune tâche validée du ${rangeText}.`;
+    }
+  }
+
   // petits helpers
   function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+  function refreshSphairaOverview(){
+    const ws = loadWorkspaceFromStorage();
+    renderToday(ws);
+    renderWeeklyChart(ws);
+  }
+
   // rafraîchissement : au chargement, sur storage et heartbeat
-  renderToday();
+  refreshSphairaOverview();
   window.addEventListener('storage', (e)=>{
-    if(e && typeof e.key === 'string' && STORAGE_KEYS.includes(e.key)) renderToday();
-    if(e && e.key === 'sphaira:lastWriteAt') renderToday();
+    if(e && typeof e.key === 'string' && STORAGE_KEYS.includes(e.key)) refreshSphairaOverview();
+    if(e && e.key === 'sphaira:lastWriteAt') refreshSphairaOverview();
   });
   try{
     const bc = new BroadcastChannel('ORIS_HEARTBEAT');
-    bc.onmessage = ()=> renderToday();
+    bc.onmessage = ()=> refreshSphairaOverview();
   }catch(_){}
+
+  /* ==============================
+     Composition message (NEXUS)
+     ============================== */
+  const composeModal = document.getElementById('composeModal');
+  const openComposeBtn = document.getElementById('openComposeBtn');
+  const openSphairaBtn = document.getElementById('openSphairaBtn');
+  const closeComposeBtn = document.getElementById('closeComposeBtn');
+  const clearComposeBtn = document.getElementById('clearComposeBtn');
+  const sendComposeBtn = document.getElementById('sendComposeBtn');
+  const composeFrom = document.getElementById('composeFrom');
+  const composeTo = document.getElementById('composeTo');
+  const composeCc = document.getElementById('composeCc');
+  const composeBcc = document.getElementById('composeBcc');
+  const composeSubject = document.getElementById('composeSubject');
+  const composeBody = document.getElementById('composeBody');
+  const composeStatus = document.getElementById('composeStatus');
+
+  function setComposeStatus(message='', tone='muted'){
+    if(!composeStatus) return;
+    const palette = {
+      muted: 'var(--muted)',
+      success: '#39ff14',
+      error: '#ff9ca3'
+    };
+    composeStatus.style.color = palette[tone] || palette.muted;
+    composeStatus.textContent = message;
+  }
+
+  function resetComposeForm(){
+    if(composeFrom){ composeFrom.selectedIndex = 0; }
+    if(composeTo){ composeTo.value = ''; }
+    if(composeCc){ composeCc.value = ''; }
+    if(composeBcc){ composeBcc.value = ''; }
+    if(composeSubject){ composeSubject.value = ''; }
+    if(composeBody){ composeBody.innerHTML = ''; }
+    setComposeStatus('');
+  }
+
+  function openComposeModalHandler(){
+    if(!composeModal) return;
+    composeModal.dataset.open = 'true';
+    composeModal.setAttribute('aria-hidden','false');
+    setComposeStatus('Sélectionne la boîte d’envoi et saisis ton message.');
+    setTimeout(()=>{ composeTo?.focus(); }, 0);
+  }
+
+  function closeComposeModalHandler(){
+    if(!composeModal) return;
+    composeModal.dataset.open = 'false';
+    composeModal.setAttribute('aria-hidden','true');
+  }
+
+  function parseAddresses(raw){
+    if(!raw) return [];
+    return raw.split(/[,;\s]+/).map(part=>part.trim()).filter(Boolean);
+  }
+
+  openComposeBtn?.addEventListener('click', ()=>{ resetComposeForm(); openComposeModalHandler(); });
+  openSphairaBtn?.addEventListener('click', ()=>{
+    const win = window.open('./SPHAIRA/index.html','_blank');
+    if(win){ try{ win.opener = null; }catch(_){ /* ignore */ } }
+  });
+  closeComposeBtn?.addEventListener('click', closeComposeModalHandler);
+  clearComposeBtn?.addEventListener('click', ()=>{ resetComposeForm(); setComposeStatus('Brouillon effacé.', 'muted'); composeTo?.focus(); });
+  composeModal?.addEventListener('click', (event)=>{ if(event.target===composeModal) closeComposeModalHandler(); });
+
+  sendComposeBtn?.addEventListener('click', ()=>{
+    const to = composeTo ? composeTo.value.trim() : '';
+    if(!to){
+      setComposeStatus('Ajoute au moins un destinataire.', 'error');
+      composeTo?.focus();
+      return;
+    }
+    const fromLabel = composeFrom?.selectedOptions?.[0]?.textContent?.trim() || 'Compte sélectionné';
+    const ccList = parseAddresses(composeCc?.value || '');
+    const bccList = parseAddresses(composeBcc?.value || '');
+    const subject = composeSubject?.value.trim() || '(Sans objet)';
+    const bodyPreviewRaw = (composeBody?.innerText || '').trim();
+    const previewPieces = [
+      `Envoi depuis ${fromLabel}`,
+      `vers ${to}`,
+      subject ? `objet « ${subject} »` : ''
+    ];
+    if(ccList.length) previewPieces.push(`${ccList.length} CC`);
+    if(bccList.length) previewPieces.push(`${bccList.length} CCI`);
+    if(bodyPreviewRaw){
+      const shortened = bodyPreviewRaw.length>80 ? `${bodyPreviewRaw.slice(0,80)}…` : bodyPreviewRaw;
+      previewPieces.push(`aperçu : ${shortened}`);
+    }
+    setComposeStatus(previewPieces.filter(Boolean).join(' · '), 'success');
+  });
+
+  document.addEventListener('keydown', (event)=>{
+    if(event.key === 'Escape' && composeModal?.dataset.open === 'true'){
+      closeComposeModalHandler();
+    }
+  });
 
   /* ==============================
      Création Tâche/Objectif (SPHAIRA)
@@ -645,7 +904,7 @@
     }
 
     if(!persistSphairaWorkspace(ws)){ alert('Échec enregistrement dans SPHAIRA.'); return; }
-    closeCreator(); renderToday();
+    closeCreator(); refreshSphairaOverview();
   }
 
   openCreatorBtn.addEventListener('click', openCreator);
