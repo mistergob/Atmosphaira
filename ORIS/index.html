@@ -32,7 +32,8 @@
         radial-gradient(900px 700px at 15% 85%, rgba(0,234,255,.12), transparent 55%),
         radial-gradient(700px 500px at 80% 80%, rgba(0,40,80,.35), transparent 60%),
         linear-gradient(120deg, var(--bg-a), var(--bg-b) 40%, var(--bg-c));
-      overflow:hidden;
+      overflow-x:hidden;
+      overflow-y:auto;
     }
     body::before{
       content:""; position:fixed; inset:0; pointer-events:none; mix-blend-mode:screen; opacity:.15; z-index:-1;
@@ -52,7 +53,7 @@
     }
     @keyframes float{from{transform:translateY(-1.5%)}to{transform:translateY(1.5%)}}
 
-    .shell{display:grid; grid-template-columns: 1fr var(--sidebar-w); gap:12px; height:100vh; padding:12px; max-width:1600px; margin:0 auto}
+    .shell{display:grid; grid-template-columns: 1fr var(--sidebar-w); gap:12px; min-height:100vh; padding:12px; max-width:1600px; margin:0 auto}
     .main{display:flex; flex-direction:column; min-width:0}
     .right{display:flex; flex-direction:column; min-width:0}
 

@@ -93,6 +93,15 @@
     border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08);
     box-shadow: 0 0 8px rgba(0,234,255,.4); color:#7ee3ff; display:flex; align-items:center; justify-content:center; font-size:12px; user-select:none;
   }
+  .contact-badge{
+    position:absolute; left:-6px; bottom:-6px; width:22px; height:22px; border-radius:9999px;
+    border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08);
+    box-shadow:0 0 8px rgba(0,234,255,.35);
+    color:#e6f7ff; display:flex; align-items:center; justify-content:center; font-size:12px;
+    cursor:pointer; user-select:none;
+    transition: filter .15s ease, transform .15s ease;
+  }
+  .contact-badge:hover{ filter:var(--glow); transform:translateY(-1px); }
 
   .menu{ position:fixed;display:none;flex-direction:column;min-width:300px; background: rgba(6,10,24,.72);
     border:1px solid rgba(255,255,255,.08); border-radius:14px; box-shadow:0 20px 40px rgba(0,0,0,.35); overflow:hidden; z-index:70; backdrop-filter: blur(10px); }
@@ -243,6 +252,20 @@
     color:var(--text);
   }
   .task-item small{color:var(--muted)}
+  #contactList{max-height:280px;overflow:auto;padding-right:4px;scrollbar-color:rgba(0,234,255,.45) rgba(255,255,255,.05)}
+  .contact-item{
+    position:relative;display:flex;flex-direction:column;gap:10px;padding:14px 16px;
+    border-radius:14px;border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(140deg, rgba(255,255,255,.05), rgba(5,10,30,.65));
+    box-shadow:0 18px 32px rgba(0,0,0,.25);
+    backdrop-filter:blur(12px);
+    color:var(--text);
+  }
+  .contact-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .contact-info{display:flex;flex-direction:column;gap:6px;flex:1}
+  .contact-name{font-weight:600;letter-spacing:.01em}
+  .contact-meta{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+  .contact-actions{display:flex;gap:8px;flex-shrink:0}
   .task-row{display:flex;align-items:flex-start;gap:12px;justify-content:space-between}
   .task-main{display:flex;gap:12px;align-items:flex-start;flex:1}
   .task-title{display:flex;flex-direction:column;gap:6px;font-weight:600;letter-spacing:.01em}
@@ -363,6 +386,7 @@
       <div class="menu-footer">
         <button id="iconObjectiveBtn" class="icon-btn" title="Objectifs (🎯)" aria-label="Objectifs">🎯</button>
         <button id="iconTaskBtn" class="icon-btn star" title="Ajouter/éditer des tâches" aria-label="Ajouter/éditer des tâches">⭐</button>
+        <button id="iconContactBtn" class="icon-btn" title="Contacts" aria-label="Contacts">📇</button>
         <button id="iconWireBtn" class="icon-btn" title="Connecter à…" aria-label="Connecter à…">🔗</button>
         <button id="iconDeleteBtn" class="icon-btn" title="Supprimer le cercle" aria-label="Supprimer le cercle">🗑️</button>
       </div>
@@ -461,6 +485,22 @@
     </div>
   </div>
 
+  <!-- Modale Contacts -->
+  <div id="contactModal" class="modal" aria-hidden="true">
+    <div class="card">
+      <h3>Contacts du cercle</h3>
+      <div class="row"><label>Nom</label><input id="contactLast" type="text" placeholder="Nom"/></div>
+      <div class="row"><label>Prénom</label><input id="contactFirst" type="text" placeholder="Prénom"/></div>
+      <div class="row"><label>Téléphone</label><input id="contactPhone" type="tel" placeholder="Numéro de téléphone"/></div>
+      <div class="actions">
+        <button id="contactCancel" class="btn secondary" type="button">Fermer</button>
+        <button id="contactSave" class="btn" type="button">Ajouter</button>
+      </div>
+      <h3>Liste des contacts</h3>
+      <div id="contactList" class="list"></div>
+    </div>
+  </div>
+
   <!-- Modale Objectifs -->
   <div id="objectiveEditor" class="modal" aria-hidden="true">
     <div class="card">
@@ -534,6 +574,7 @@ const iconWireBtn=document.getElementById('iconWireBtn');
 const iconDeleteBtn=document.getElementById('iconDeleteBtn');
 const iconTaskBtn=document.getElementById('iconTaskBtn');
 const iconObjectiveBtn=document.getElementById('iconObjectiveBtn');
+const iconContactBtn=document.getElementById('iconContactBtn');
 const openUrlBtnMenu=document.getElementById('openUrlBtnMenu');
 
 /* Menu 4 controls */
@@ -579,6 +620,15 @@ const tasksModal=document.getElementById('tasksModal');
 const tasksContainer=document.getElementById('tasksContainer');
 const tasksClose=document.getElementById('tasksClose');
 
+/* Modale Contacts */
+const contactModal=document.getElementById('contactModal');
+const contactLast=document.getElementById('contactLast');
+const contactFirst=document.getElementById('contactFirst');
+const contactPhone=document.getElementById('contactPhone');
+const contactSave=document.getElementById('contactSave');
+const contactCancel=document.getElementById('contactCancel');
+const contactList=document.getElementById('contactList');
+
 /* Global task form */
 const taskGlobalNodeSelect=document.getElementById('taskGlobalNodeSelect');
 const taskGlobalTitle=document.getElementById('taskGlobalTitle');
@@ -616,6 +666,10 @@ let snapHint=null;
 
 /* Wiring */
 const wiring={active:false, source:null, ghost:null};
+
+let contactNode=null;
+let editingContactId=null;
+const contactSaveDefaultText=contactSave ? contactSave.textContent || 'Ajouter' : 'Ajouter';
 
 /* Task editor state */
 let taskEditorNode=null;
@@ -656,6 +710,7 @@ function refreshTaskLists(){
   if(isModalOpen(completedTasksModal)) renderCompletedTasksList();
 }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function generateContactId(){ return 'ct'+Math.random().toString(36).slice(2,6)+Date.now().toString(36); }
 
 function getNodeId(node){
   if(!node) return '';
@@ -959,6 +1014,110 @@ function deleteTaskFromNode(node, taskId){
   if(isModalOpen(objectivesModal)) renderGlobalObjectivesList();
 }
 
+/* Contacts */
+function updateContactBadge(node){
+  const old=node.querySelector('.contact-badge'); if(old) old.remove();
+  const contacts=(node?node._contacts:[])||[];
+  const visible=contacts.filter(c=> (c && (c.first||c.last||c.phone)));
+  if(visible.length===0) return;
+  const badge=document.createElement('div'); badge.className='contact-badge'; badge.textContent='📇';
+  badge.title=visible.length===1 ? '1 contact' : `${visible.length} contacts`;
+  badge.setAttribute('aria-label', badge.title);
+  badge.addEventListener('pointerdown',e=>e.stopPropagation());
+  badge.addEventListener('click',e=>{ e.stopPropagation(); openContactModal(node); });
+  node.appendChild(badge);
+}
+function resetContactForm(){
+  if(contactLast) contactLast.value='';
+  if(contactFirst) contactFirst.value='';
+  if(contactPhone) contactPhone.value='';
+  editingContactId=null;
+  if(contactSave) contactSave.textContent=contactSaveDefaultText;
+}
+function openContactModal(node){
+  if(!contactModal || !node) return;
+  setCurrentNode(node,{preserveMenu2:true});
+  ensureObjArrays(node);
+  contactNode=node;
+  resetContactForm();
+  renderContactList();
+  contactModal.style.display='flex';
+  contactModal.setAttribute('aria-hidden','false');
+  (contactLast||contactFirst)?.focus?.();
+}
+function closeContactModal(){
+  if(!contactModal) return;
+  contactModal.style.display='none';
+  contactModal.setAttribute('aria-hidden','true');
+  contactNode=null;
+  resetContactForm();
+}
+function renderContactList(){
+  if(!contactList) return;
+  contactList.innerHTML='';
+  if(!contactNode){ return; }
+  ensureObjArrays(contactNode);
+  const contacts=contactNode._contacts||[];
+  if(contacts.length===0){
+    const empty=document.createElement('div'); empty.className='contact-item'; empty.textContent='Aucun contact pour ce cercle.';
+    contactList.appendChild(empty);
+    return;
+  }
+  contacts.forEach(contact=>{
+    const rawFirst=contact.first||'';
+    const rawLast=contact.last||'';
+    const rawPhone=contact.phone||'';
+    const displayName=escapeHtml([rawFirst.trim(), rawLast.trim()].filter(Boolean).join(' ') || 'Contact');
+    const safeLast=escapeHtml(rawLast||'—');
+    const safeFirst=escapeHtml(rawFirst||'—');
+    const safePhone=escapeHtml(rawPhone||'—');
+    const item=document.createElement('div'); item.className='contact-item';
+    item.innerHTML=`
+      <div class="contact-row">
+        <div class="contact-info">
+          <div class="contact-name">${displayName}</div>
+          <div class="contact-meta">
+            <span><strong>Nom :</strong> ${safeLast}</span>
+            <span><strong>Prénom :</strong> ${safeFirst}</span>
+            <span><strong>Tél. :</strong> ${safePhone}</span>
+          </div>
+        </div>
+        <div class="contact-actions">
+          <button type="button" class="icon-btn small contact-edit" title="Modifier">✏️</button>
+          <button type="button" class="icon-btn small contact-delete" title="Supprimer">🗑️</button>
+        </div>
+      </div>
+    `;
+    const editBtn=item.querySelector('.contact-edit');
+    const deleteBtn=item.querySelector('.contact-delete');
+    editBtn?.addEventListener('click',()=>{
+      editingContactId=contact.id;
+      if(contactLast) contactLast.value=rawLast;
+      if(contactFirst) contactFirst.value=rawFirst;
+      if(contactPhone) contactPhone.value=rawPhone;
+      if(contactSave) contactSave.textContent='Mettre à jour';
+      (contactLast||contactFirst)?.focus?.();
+    });
+    deleteBtn?.addEventListener('click',()=>{
+      if(!contactNode) return;
+      if(!confirm('Supprimer ce contact ?')) return;
+      deleteContactFromNode(contactNode, contact.id);
+    });
+    contactList.appendChild(item);
+  });
+}
+function deleteContactFromNode(node, contactId){
+  if(!node) return;
+  ensureObjArrays(node);
+  const before=node._contacts.length;
+  node._contacts=node._contacts.filter(c=>c.id!==contactId);
+  if(node._contacts.length===before) return;
+  if(editingContactId===contactId) resetContactForm();
+  updateContactBadge(node);
+  saveState();
+  if(contactNode===node) renderContactList();
+}
+
 /* Objectifs */
 function updateObjectiveBadge(node){
   const old=node.querySelector('.objective-badge'); if(old) old.remove();
@@ -971,6 +1130,14 @@ function ensureObjArrays(node){
   if(!node) return;
   if(!node._objectives) node._objectives=[];
   if(!node._tasks) node._tasks=[];
+  if(!Array.isArray(node._contacts)) node._contacts=[];
+  node._contacts=node._contacts.filter(c=>c && typeof c==='object');
+  node._contacts.forEach(c=>{
+    if(!c.id) c.id=generateContactId();
+    c.last=typeof c.last==='string'?c.last.trim(): (c.last?String(c.last).trim():'');
+    c.first=typeof c.first==='string'?c.first.trim(): (c.first?String(c.first).trim():'');
+    c.phone=typeof c.phone==='string'?c.phone.trim(): (c.phone?String(c.phone).trim():'');
+  });
   node._objectives.forEach(o=>{
     if(!Array.isArray(o.taskIds)) o.taskIds=[];
     const seen=new Set();
@@ -1409,6 +1576,42 @@ renderNodeTasksList(); renderTaskObjectiveSelect(); refreshTaskLists();
 });
 taskCancel.addEventListener('click',closeTaskEditor);
 taskEditor.addEventListener('click',(e)=>{ if(e.target===taskEditor) closeTaskEditor(); });
+
+/* ====== Contacts ====== */
+if(iconContactBtn){
+  iconContactBtn.addEventListener('click',()=>{
+    if(!currentNode) return;
+    openContactModal(currentNode);
+    closeMenu(menu);
+    closeMenu(menuHeart);
+  });
+}
+if(contactSave){
+  contactSave.addEventListener('click',()=>{
+    if(!contactNode){ closeContactModal(); return; }
+    const last=(contactLast?.value||'').trim();
+    const first=(contactFirst?.value||'').trim();
+    const phone=(contactPhone?.value||'').trim();
+    if(!last){ alert('Veuillez saisir un nom.'); return; }
+    if(!first){ alert('Veuillez saisir un prénom.'); return; }
+    if(!phone){ alert('Veuillez saisir un numéro de téléphone.'); return; }
+    ensureObjArrays(contactNode);
+    if(editingContactId){
+      const existing=contactNode._contacts.find(c=>c.id===editingContactId);
+      if(existing){ existing.last=last; existing.first=first; existing.phone=phone; }
+      else{ contactNode._contacts.push({ id:generateContactId(), last, first, phone }); }
+    }else{
+      contactNode._contacts.push({ id:generateContactId(), last, first, phone });
+    }
+    saveState();
+    updateContactBadge(contactNode);
+    renderContactList();
+    resetContactForm();
+    (contactLast||contactFirst)?.focus?.();
+  });
+}
+contactCancel?.addEventListener('click', closeContactModal);
+contactModal?.addEventListener('click',(e)=>{ if(e.target===contactModal) closeContactModal(); });
 
 /* ====== Global tasks ====== */
 tasksBtn.addEventListener('click', openTasksListModal);
@@ -1995,7 +2198,7 @@ italicBtn.addEventListener('click',(e)=>{ e.stopPropagation(); const on=togglePr
 underlineBtn.addEventListener('click',(e)=>{ e.stopPropagation(); const on=togglePressed(underlineBtn); currentNode.querySelector('.label').style.textDecoration=on?'underline':'none'; fitLabelToNode(currentNode); saveState(); });
 
 iconWireBtn.addEventListener('click',()=>{ if(!currentNode) return; startWiring(currentNode); closeMenu(menu); });
-iconDeleteBtn.addEventListener('click',()=>{ if(!currentNode) return; if(currentNode.id==='main-node'||currentNode.dataset.id==='node-0'){ alert('Le cercle principal ne peut pas être supprimé.'); return; } qLines().forEach(l=>{ if(l.dataset.from===currentNode.dataset.id||l.dataset.to===currentNode.dataset.id) l.remove(); }); currentNode.remove(); saveState(); refreshSidebar(); closeMenu(menu); });
+iconDeleteBtn.addEventListener('click',()=>{ if(!currentNode) return; if(currentNode.id==='main-node'||currentNode.dataset.id==='node-0'){ alert('Le cercle principal ne peut pas être supprimé.'); return; } if(contactNode===currentNode) closeContactModal(); qLines().forEach(l=>{ if(l.dataset.from===currentNode.dataset.id||l.dataset.to===currentNode.dataset.id) l.remove(); }); currentNode.remove(); saveState(); refreshSidebar(); closeMenu(menu); });
 iconTaskBtn.addEventListener('click',()=>{ if(!currentNode) return; openTaskEditor(currentNode); closeMenu(menu); });
 iconObjectiveBtn.addEventListener('click',()=>{ if(!currentNode) return; openObjectiveEditor(currentNode); closeMenu(menu); });
 
@@ -2015,7 +2218,7 @@ boldBtnH.addEventListener('click',(e)=>{ e.stopPropagation(); const on=togglePre
 italicBtnH.addEventListener('click',(e)=>{ e.stopPropagation(); const on=togglePressed(italicBtnH); currentNode.querySelector('.label').style.fontStyle=on?'italic':'normal'; fitLabelToNode(currentNode); saveState(); });
 underlineBtnH.addEventListener('click',(e)=>{ e.stopPropagation(); const on=togglePressed(underlineBtnH); currentNode.querySelector('.label').style.textDecoration=on?'underline':'none'; fitLabelToNode(currentNode); saveState(); });
 iconColorBtnH.addEventListener('click',()=>{ colorPickerH.focus(); colorPickerH.click(); });
-iconDeleteBtnH.addEventListener('click',()=>{ if(!currentNode) return; if(currentNode.id==='main-node'||currentNode.dataset.id==='node-0'){ alert('Le cercle principal ne peut pas être supprimé.'); return; } qLines().forEach(l=>{ if(l.dataset.from===currentNode.dataset.id||l.dataset.to===currentNode.dataset.id) l.remove(); }); currentNode.remove(); saveState(); refreshSidebar(); closeMenu(menuHeart); });
+iconDeleteBtnH.addEventListener('click',()=>{ if(!currentNode) return; if(currentNode.id==='main-node'||currentNode.dataset.id==='node-0'){ alert('Le cercle principal ne peut pas être supprimé.'); return; } if(contactNode===currentNode) closeContactModal(); qLines().forEach(l=>{ if(l.dataset.from===currentNode.dataset.id||l.dataset.to===currentNode.dataset.id) l.remove(); }); currentNode.remove(); saveState(); refreshSidebar(); closeMenu(menuHeart); });
 
 /* Sidebar */
 function stylePrincipalButtonFromNode(btn,node){
@@ -2066,6 +2269,7 @@ actCenter.addEventListener('click',()=>centerOnCurrent());
 actDelete.addEventListener('click',()=>{
   if(!currentNode) return;
   if(currentNode.id==='main-node'||currentNode.dataset.id==='node-0'){ alert('Le cercle principal ne peut pas être supprimé.'); return; }
+  if(contactNode===currentNode) closeContactModal();
   qLines().forEach(l=>{ if(l.dataset.from===currentNode.dataset.id||l.dataset.to===currentNode.dataset.id) l.remove(); });
   currentNode.remove(); currentNode=null; enableActionPanel(false); saveState(); showActionsPanel(false); menu2Locked=false; refreshSidebar();
 });
@@ -2096,6 +2300,7 @@ fileInput.addEventListener('change', async (e)=>{
 });
 resetBtn.addEventListener('click',()=>{
   if(!confirm("Réinitialiser l'espace de travail ?")) return;
+  closeContactModal();
   localStorage.removeItem('workspaceState'); localStorage.removeItem('sphaira:workspaceState:v1');
   qLines().forEach(l=>l.remove());
   world.querySelectorAll('.node').forEach(n=>{ if(n!==mainNode) n.remove(); });
@@ -2103,7 +2308,8 @@ resetBtn.addEventListener('click',()=>{
   mainNode.querySelector('.label').textContent='Cercle principal';
   mainNode.style.backgroundColor='var(--primary)'; mainNode.style.setProperty('--node','var(--primary)');
   idCounter=1; camera.x=camera.y=0; camera.z=1; applyCamera();
-  mainNode._tasks=[]; mainNode._objectives=[];
+  mainNode._tasks=[]; mainNode._objectives=[]; mainNode._contacts=[];
+  updateContactBadge(mainNode);
   saveState(); updateAllLines(); fitLabelToNode(mainNode); showActionsPanel(false); menu2Locked=false; refreshSidebar();
 });
 
@@ -2168,7 +2374,11 @@ function attemptConnect(target){
 wireModeBtn.addEventListener('click',()=>{ if(wiring.active) stopWiring(); else { wiring.active=true; wireModeBtn.classList.add('active'); }});
 document.addEventListener('keydown',(e)=>{
   if(e.key==='c'||e.key==='C'){ if(wiring.active) stopWiring(); else { wiring.active=true; wireModeBtn.classList.add('active'); } }
-  if(e.key==='Escape'){ if(wiring.active) stopWiring(); closeMenu(menu); closeMenu(menuHeart); }
+  if(e.key==='Escape'){
+    if(wiring.active) stopWiring();
+    closeMenu(menu); closeMenu(menuHeart);
+    if(isModalOpen(contactModal)) closeContactModal();
+  }
 });
 
 /* Drag */
@@ -2225,7 +2435,7 @@ function enableDrag(node){
     if(node.id==='main-node') openMenuAt(menuHeart, e, node); else openMenuAt(menu, e, node);
   });
   node._dragEnabled=true;
-  updateUrlBadge(node); updateTaskBadge(node); updateObjectiveBadge(node);
+  updateUrlBadge(node); updateTaskBadge(node); updateObjectiveBadge(node); updateContactBadge(node);
 }
 
 /* Add nodes */
@@ -2238,7 +2448,7 @@ function addNodeNear(target){
   const base=toHex(getComputedStyle(target).backgroundColor)||'#00EAFF';
   Object.assign(node.style,{left:left+'px',top:top+'px',width:BIG_SIZE+'px',height:BIG_SIZE+'px',backgroundColor:base});
   node.style.setProperty('--node',base);
-  node.innerHTML='<span class="label">Cercle principal</span>'; node._tasks=[]; node._objectives=[];
+  node.innerHTML='<span class="label">Cercle principal</span>'; node._tasks=[]; node._objectives=[]; node._contacts=[];
   world.appendChild(node); enableDrag(node); fitLabelToNode(node); createLine(target,node); setCurrentNode(node,{preserveMenu2:true}); saveState(); return node;
 }
 function addNodeNearScaled(target){
@@ -2250,7 +2460,7 @@ function addNodeNearScaled(target){
   const base=toHex(getComputedStyle(target).backgroundColor)||'#00EAFF';
   Object.assign(node.style,{left:left+'px',top:top+'px',width:SMALL_SIZE+'px',height:SMALL_SIZE+'px',backgroundColor:base});
   node.style.setProperty('--node',base);
-  node.innerHTML='<span class="label">Cercle secondaire</span>'; node._tasks=[]; node._objectives=[];
+  node.innerHTML='<span class="label">Cercle secondaire</span>'; node._tasks=[]; node._objectives=[]; node._contacts=[];
   world.appendChild(node); enableDrag(node); fitLabelToNode(node); createLine(target,node); setCurrentNode(node,{preserveMenu2:true}); saveState(); return node;
 }
 
@@ -2285,7 +2495,8 @@ function buildState(){
     maxFont: n.dataset.maxFont ? parseFloat(n.dataset.maxFont) : null,
     url: n.dataset.url || '',
     tasks: (n._tasks||[]).map(t=>({id:t.id, title:t.title, desc:t.desc, start:t.start||'', end:t.end||'', done: !!t.done, objectiveIds:[...(t.objectiveIds||[])]})),
-    objectives: (n._objectives||[]).map(o=>({id:o.id, title:o.title, desc:o.desc, due:o.due||'', taskIds:[...(o.taskIds||[])], completed:!!o.completed, completedAt:o.completedAt||null}))
+    objectives: (n._objectives||[]).map(o=>({id:o.id, title:o.title, desc:o.desc, due:o.due||'', taskIds:[...(o.taskIds||[])], completed:!!o.completed, completedAt:o.completedAt||null})),
+    contacts: (n._contacts||[]).map(c=>({ id:c.id, first:c.first||'', last:c.last||'', phone:c.phone||'' }))
   }));
   const edges=Array.from(qLines()).map(l=>({from:l.dataset.from,to:l.dataset.to}));
   return { idCounter, nodes, edges, camera };
@@ -2297,6 +2508,7 @@ function saveState(){
   refreshSidebar();
 }
 function restoreState(data){
+  closeContactModal();
   qLines().forEach(l=>l.remove());
   world.querySelectorAll('.node').forEach(n=>{ if(n!==mainNode) n.remove(); });
   idCounter=data?.idCounter ?? 1;
@@ -2314,8 +2526,9 @@ function restoreState(data){
     if(n.url){ node.dataset.url=n.url; }
     node._tasks=Array.isArray(n.tasks) ? n.tasks.map(t=>({ id:t.id, title:t.title, desc:t.desc, start:t.start||'', end:t.end||'', done: !!t.done, objectiveIds: Array.isArray(t.objectiveIds) ? [...t.objectiveIds] : [] })) : [];
     node._objectives=Array.isArray(n.objectives) ? n.objectives.map(o=>({ id:o.id, title:o.title, desc:o.desc, due:o.due||'', taskIds:[...(o.taskIds||[])], completed: !!o.completed, completedAt: o.completedAt||null })) : [];
+    node._contacts=Array.isArray(n.contacts) ? n.contacts.map(c=>({ id:c.id||generateContactId(), first:c.first||'', last:c.last||'', phone:c.phone||'' })) : [];
     syncAllTaskObjectiveLinks(node);
-    fitLabelToNode(node); updateUrlBadge(node); updateTaskBadge(node); updateObjectiveBadge(node); byId[n.id]=node;
+    fitLabelToNode(node); updateUrlBadge(node); updateTaskBadge(node); updateObjectiveBadge(node); updateContactBadge(node); byId[n.id]=node;
   });
   if(!byId['node-0']){ mainNode.dataset.id='node-0'; mainNode.querySelector('.label').textContent='Cercle principal'; byId['node-0']=mainNode; }
   enableDrag(mainNode); fitLabelToNode(mainNode);
@@ -2326,7 +2539,8 @@ function restoreState(data){
 }
 
 /* Init */
-enableDrag(mainNode); mainNode._tasks = mainNode._tasks||[]; mainNode._objectives = mainNode._objectives||[];
+enableDrag(mainNode); mainNode._tasks = mainNode._tasks||[]; mainNode._objectives = mainNode._objectives||[]; mainNode._contacts = mainNode._contacts||[];
+updateContactBadge(mainNode);
 fitLabelToNode(mainNode); refreshSidebar(); enableActionPanel(false); showActionsPanel(false); applyCamera();
     const saved = localStorage.getItem('sphaira:workspaceState:v1') || localStorage.getItem('workspaceState');
     if(saved){ try{ restoreState(JSON.parse(saved)); }catch{} } else { saveState(); }
