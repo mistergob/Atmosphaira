@@ -133,6 +133,24 @@
     .task.objective{border-color:#39ff14; box-shadow:0 0 8px rgba(57,255,20,.75), 0 0 20px rgba(57,255,20,.35);}
     .badge-objective{display:inline-block; padding:2px 6px; border-radius:999px; border:1px solid rgba(57,255,20,.65); color:#39ff14; font-size:10px; letter-spacing:.04em; text-transform:uppercase; margin-bottom:4px;}
     .task small{color:var(--muted)}
+    .task-filter{display:flex; flex-direction:column; gap:6px; margin-bottom:10px;}
+    .task-filter label{font-size:12px; color:var(--muted); letter-spacing:.02em;}
+    .task-filter select{width:100%;}
+    .task-filter.hidden{display:none;}
+
+    .task-modal-card{display:flex; flex-direction:column; gap:12px; background:linear-gradient(180deg, rgba(15,22,44,.92), rgba(6,10,24,.9)); border:1px solid rgba(255,255,255,.08); box-shadow:0 24px 60px rgba(0,0,0,.45);}
+    .task-modal-header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+    .task-modal-header h3{margin:0; font-family:Orbitron,sans-serif; letter-spacing:.06em;}
+    .task-modal-context{margin:4px 0 0; font-size:12px; color:var(--muted);}
+    .task-modal-body{display:flex; flex-direction:column; gap:12px;}
+    .task-modal-field{display:flex; flex-direction:column; gap:6px;}
+    .task-modal-field label{font-size:12px; color:var(--muted);}
+    .task-modal-columns{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}
+    .task-modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:4px;}
+    .task-modal-card textarea{min-height:110px;}
+    .btn.danger{color:#ff9ca3; border-color:rgba(255,76,76,.35); box-shadow:0 8px 24px rgba(255,76,76,.25); background:linear-gradient(#2c0d16,#19080f) padding-box,
+      conic-gradient(from 180deg, rgba(255,76,76,.75), rgba(138,43,226,.6), rgba(255,76,76,.75)) border-box;}
+    .btn.danger:hover{filter:drop-shadow(0 0 12px rgba(255,76,76,.45));}
 
     /* Modal */
     .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(3,6,16,.55); z-index:50; backdrop-filter: blur(2px);}
@@ -252,6 +270,12 @@
         </div>
         <div class="section" id="tasksSection">
           <h3>Tâches &amp; Objectifs (SPHAIRA)</h3>
+          <div id="taskFilterRow" class="task-filter hidden">
+            <label for="taskCircleFilter">Par cercle principal</label>
+            <select id="taskCircleFilter" class="select">
+              <option value="all">Tous les cercles principaux</option>
+            </select>
+          </div>
           <div id="taskList">—</div>
           <div style="margin-top:6px" class="status">Source : SPHAIRA (localStorage).</div>
         </div>
@@ -310,6 +334,49 @@
     </div>
   </div>
 
+  <!-- SPHAIRA TASK MODAL -->
+  <div id="taskEditModal" class="modal" aria-hidden="true" role="dialog" aria-label="Tâche SPHAIRA">
+    <div class="card task-modal-card">
+      <div class="task-modal-header">
+        <div>
+          <h3>Ajouter / modifier une tâche</h3>
+          <p id="taskModalContext" class="task-modal-context"></p>
+        </div>
+        <button id="taskModalDelete" class="btn ghost danger" type="button" style="display:none">Supprimer</button>
+      </div>
+      <div class="task-modal-body">
+        <div class="task-modal-field">
+          <label for="taskModalTitle">Titre</label>
+          <input id="taskModalTitle" type="text" placeholder="Titre de la tâche" class="input">
+        </div>
+        <div class="task-modal-field">
+          <label for="taskModalDesc">Note</label>
+          <textarea id="taskModalDesc" placeholder="Description ou notes"></textarea>
+        </div>
+        <div class="task-modal-columns">
+          <div class="task-modal-field">
+            <label for="taskModalStart">Début</label>
+            <input id="taskModalStart" type="date" class="input">
+          </div>
+          <div class="task-modal-field">
+            <label for="taskModalEnd">Fin</label>
+            <input id="taskModalEnd" type="date" class="input">
+          </div>
+        </div>
+        <div class="task-modal-field">
+          <label for="taskModalObjective">Objectif</label>
+          <select id="taskModalObjective" class="select">
+            <option value="">— Aucun objectif —</option>
+          </select>
+        </div>
+      </div>
+      <div class="task-modal-actions">
+        <button id="taskModalCancel" class="btn ghost" type="button">Annuler</button>
+        <button id="taskModalSave" class="btn" type="button">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AUTH OVERLAY -->
   <div id="authBlock" class="auth-block" aria-live="polite" role="alert">
     <div class="auth-card">
@@ -350,7 +417,8 @@
     view: 'oris:view',
     cursor: 'oris:cursorISO',
     visible: 'oris:visibleCals',
-    selected: 'oris:selectedCal'
+    selected: 'oris:selectedCal',
+    taskFilter: 'oris:taskCircleFilter'
   };
 
   /* ==============================
@@ -390,6 +458,8 @@
   const calListEl = document.getElementById('calList');
   const tasksSection = document.getElementById('tasksSection');
   const taskListEl = document.getElementById('taskList');
+  const taskFilterRow = document.getElementById('taskFilterRow');
+  const taskCircleFilter = document.getElementById('taskCircleFilter');
   const toggleTasksBtn = document.getElementById('toggleTasks');
 
   const eventModal = document.getElementById('eventModal');
@@ -410,6 +480,17 @@
   const defaultCalendarLabel = calendarLabelEl ? calendarLabelEl.textContent : 'Calendrier';
   const meetFieldWrapper = fMeet ? fMeet.closest('div') : null;
   const meetWrapperDefaultDisplay = meetFieldWrapper ? meetFieldWrapper.style.display : '';
+
+  const taskModal = document.getElementById('taskEditModal');
+  const taskModalTitle = document.getElementById('taskModalTitle');
+  const taskModalDesc = document.getElementById('taskModalDesc');
+  const taskModalStart = document.getElementById('taskModalStart');
+  const taskModalEnd = document.getElementById('taskModalEnd');
+  const taskModalObjective = document.getElementById('taskModalObjective');
+  const taskModalContext = document.getElementById('taskModalContext');
+  const taskModalSave = document.getElementById('taskModalSave');
+  const taskModalCancel = document.getElementById('taskModalCancel');
+  const taskModalDelete = document.getElementById('taskModalDelete');
 
   let googleTokenClient = null;
   let currentView = localStorage.getItem(PERSIST_KEYS.view) || 'month';
@@ -438,6 +519,12 @@
   let draggingEvent = null;
   let dragSourceEl = null;
   let isDraggingEvent = false;
+  let principalCircleOptions = [];
+  let currentTaskCircleFilter = 'all';
+  try{
+    const storedFilter = localStorage.getItem(PERSIST_KEYS.taskFilter);
+    if(storedFilter){ currentTaskCircleFilter = storedFilter; }
+  }catch{}
 
   function setStatus(t){ statusEl.textContent = t; }
   function setAuthLocked(on){
@@ -1058,6 +1145,11 @@
     const isSphaira = !!existing?.isSphaira;
     const isObjective = !!existing?.isObjective;
 
+    if(isSphaira && !isObjective){
+      openSphairaTaskModal(existing);
+      return;
+    }
+
     if(existing){
       evtTitle.textContent = isObjective ? 'Modifier l’objectif' : (isSphaira ? 'Modifier la tâche' : 'Modifier l’événement');
     }else{
@@ -1122,6 +1214,30 @@
     eventModal.style.display='none';
     eventModal.setAttribute('aria-hidden','true');
     currentEvent = null;
+  }
+
+  async function handleDeleteCurrentEvent({ onDone }={}){
+    if(!currentEvent) return;
+    const isSphaira = !!currentEvent.isSphaira;
+    const isObjective = !!currentEvent.isObjective;
+    if(isSphaira){
+      const removed = deleteSphairaTask(currentEvent);
+      if(!removed){ alert(isObjective ? 'Impossible de supprimer cet objectif SPHAIRA.' : 'Impossible de supprimer cette tâche SPHAIRA.'); return; }
+      if(!persistSphairaWorkspace()){ alert('Impossible d’enregistrer les modifications SPHAIRA.'); return; }
+      if(typeof onDone === 'function'){ onDone(); }
+      renderTasks();
+      setStatus(isObjective ? 'Objectif SPHAIRA supprimé.' : 'Tâche SPHAIRA supprimée.');
+      return;
+    }
+    try{
+      await deleteEvent(currentEvent.calId, currentEvent.id);
+      if(typeof onDone === 'function'){ onDone(); }
+      setStatus('Événement supprimé.');
+      await loadEvents();
+    }catch(e){
+      console.error(e);
+      alert('Échec suppression.');
+    }
   }
 
   saveEventBtn.onclick = async ()=>{
@@ -1189,23 +1305,13 @@
     }catch(e){ console.error(e); alert('Échec enregistrement (permissions ?).'); }
   };
 
-  deleteEventBtn.onclick = async ()=>{
+  deleteEventBtn.onclick = ()=>{
     if(!currentEvent) return;
     const isSphaira = !!currentEvent.isSphaira;
     const isObjective = !!currentEvent.isObjective;
     const confirmed = confirm(isSphaira ? (isObjective ? 'Supprimer cet objectif ?' : 'Supprimer cette tâche ?') : 'Supprimer cet événement ?');
     if(!confirmed) return;
-    if(isSphaira){
-      const removed = deleteSphairaTask(currentEvent);
-      if(!removed){ alert(isObjective ? 'Impossible de supprimer cet objectif SPHAIRA.' : 'Impossible de supprimer cette tâche SPHAIRA.'); return; }
-      if(!persistSphairaWorkspace()){ alert('Impossible d’enregistrer les modifications SPHAIRA.'); return; }
-      closeEventModal(); renderTasks(); setStatus(isObjective ? 'Objectif SPHAIRA supprimé.' : 'Tâche SPHAIRA supprimée.');
-      return;
-    }
-    try{
-      await deleteEvent(currentEvent.calId, currentEvent.id);
-      closeEventModal(); setStatus('Événement supprimé.'); await loadEvents();
-    }catch(e){ console.error(e); alert('Échec suppression.'); }
+    handleDeleteCurrentEvent({ onDone: closeEventModal });
   };
   closeEventBtn.onclick = closeEventModal;
 
@@ -1325,6 +1431,9 @@
     const status = task?.status || task?.state || task?.progress || meta.status || '';
     const location = task?.location || task?.place || '';
     const done = task?.done ?? task?.completed ?? task?.isDone ?? false;
+    const objectiveIds = Array.isArray(task?.objectiveIds) ? task.objectiveIds.map(ref=>String(ref)) : [];
+    const nodeId = meta.nodeId ? String(meta.nodeId) : '';
+    const nodeColor = meta.color || '#00EAFF';
     const fields = {
       title: gatherFieldNames(task, ['title','name'], 'title'),
       desc: gatherFieldNames(task, ['desc','description'], 'desc'),
@@ -1340,10 +1449,13 @@
       id: task?.id || `${meta.prefix||'task'}-${Math.random().toString(36).slice(2,9)}`,
       title, desc, start, end, status, location,
       nodeName: meta.nodeName || '',
-      color: task?.color || meta.color || '#00EAFF',
+      nodeId,
+      nodeColor,
+      color: task?.color || nodeColor,
       kind: meta.kind || 'task',
       done: !!done,
       statusText: normalizeStatusText(status),
+      objectiveIds,
       _source: task, _container: meta.container || null, _index: meta.index ?? null,
       _storageKey: meta.storageKey || null, _fields: fields
     };
@@ -1373,21 +1485,22 @@
     };
     if(Array.isArray(ws)){ pushTasks(ws, { storageKey }); }
     if(Array.isArray(ws.tasks)){ pushTasks(ws.tasks, { storageKey }); }
-    if(Array.isArray(ws.objectives)){ pushObjectives(ws.objectives, { storageKey, prefix:'objective', nodeName:'Objectifs' }); }
+    if(Array.isArray(ws.objectives)){ pushObjectives(ws.objectives, { storageKey, prefix:'objective', nodeName:'Objectifs', nodeId:'', color:'#39ff14' }); }
 
     if(Array.isArray(ws.nodes)){
       const nodes = Object.fromEntries(ws.nodes.map(n=>[n.id, { name:n.text||n.title||n.id, color:n.color||'#00EAFF' }]));
       ws.nodes.forEach((n)=>{
         const list = Array.isArray(n.tasks) ? n.tasks : null;
-        const meta = { nodeName: nodes[n.id]?.name || n.id, color: nodes[n.id]?.color || '#00EAFF', prefix: `node-${n.id}`, storageKey, container: list };
+        const nodeId = String(n.id||'');
+        const meta = { nodeName: nodes[n.id]?.name || n.id, nodeId, color: nodes[n.id]?.color || '#00EAFF', prefix: `node-${n.id}`, storageKey, container: list };
         pushTasks(list, meta);
-        if(Array.isArray(n.objectives)){ pushObjectives(n.objectives, { storageKey, prefix: `node-${n.id}-objective`, nodeName: nodes[n.id]?.name || n.id, color: nodes[n.id]?.color }); }
+        if(Array.isArray(n.objectives)){ pushObjectives(n.objectives, { storageKey, prefix: `node-${n.id}-objective`, nodeName: nodes[n.id]?.name || n.id, nodeId, color: nodes[n.id]?.color || '#39ff14' }); }
       });
     }
     ['columns','lists'].forEach(key=>{
       if(Array.isArray(ws[key])){
         ws[key].forEach((col)=>{
-          const meta = { nodeName: col.name || col.title || '', color: col.color || '#00EAFF', status: col.status || col.name || '', prefix: `${key}-${col.id||col.name||'col'}`, storageKey };
+          const meta = { nodeName: col.name || col.title || '', nodeId: col.nodeId ? String(col.nodeId) : '', color: col.color || '#00EAFF', status: col.status || col.name || '', prefix: `${key}-${col.id||col.name||'col'}`, storageKey };
           const tasksList = Array.isArray(col.tasks) ? col.tasks : Array.isArray(col.cards) ? col.cards : null;
           pushTasks(tasksList, { ...meta, container: tasksList });
           if(Array.isArray(col.objectives)){ pushObjectives(col.objectives, { ...meta, prefix: `${key}-${col.id||col.name||'col'}-objective`, nodeName: meta.nodeName || 'Objectifs' }); }
@@ -1397,12 +1510,12 @@
     if(Array.isArray(ws.boards)){
       ws.boards.forEach((board)=>{
         const boardTasks = Array.isArray(board.tasks) ? board.tasks : null;
-        pushTasks(boardTasks, { nodeName: board.name || board.title || '', color: board.color || '#00EAFF', prefix: `board-${board.id||board.name||'board'}`, storageKey, container: boardTasks });
-        if(Array.isArray(board.objectives)){ pushObjectives(board.objectives, { storageKey, prefix: `board-${board.id||board.name||'board'}-objective`, nodeName: board.name || board.title || 'Objectifs', color: board.color }); }
+        pushTasks(boardTasks, { nodeName: board.name || board.title || '', nodeId: board.nodeId ? String(board.nodeId) : '', color: board.color || '#00EAFF', prefix: `board-${board.id||board.name||'board'}`, storageKey, container: boardTasks });
+        if(Array.isArray(board.objectives)){ pushObjectives(board.objectives, { storageKey, prefix: `board-${board.id||board.name||'board'}-objective`, nodeName: board.name || board.title || 'Objectifs', nodeId: board.nodeId ? String(board.nodeId) : '', color: board.color }); }
         ['columns','lists'].forEach(key=>{
           if(Array.isArray(board[key])){
             board[key].forEach((col)=>{
-              const meta = { nodeName: col.name || col.title || board.name || '', color: col.color || board.color || '#00EAFF', status: col.status || col.name || '', prefix: `${key}-${board.id||board.name||'board'}-${col.id||col.name||'col'}`, storageKey };
+              const meta = { nodeName: col.name || col.title || board.name || '', nodeId: col.nodeId ? String(col.nodeId) : (board.nodeId ? String(board.nodeId) : ''), color: col.color || board.color || '#00EAFF', status: col.status || col.name || '', prefix: `${key}-${board.id||board.name||'board'}-${col.id||col.name||'col'}`, storageKey };
               const list = Array.isArray(col.tasks) ? col.tasks : Array.isArray(col.cards) ? col.cards : null;
               pushTasks(list, { ...meta, container:list });
               if(Array.isArray(col.objectives)){ pushObjectives(col.objectives, { ...meta, prefix: `${key}-${board.id||board.name||'board'}-${col.id||col.name||'col'}-objective`, nodeName: meta.nodeName || board.name || 'Objectifs' }); }
@@ -1436,6 +1549,7 @@
       id: task.id, calId: SPHAIRA_CALENDAR_ID, calName: context.join(' · '),
       color: baseColor, summary: task.title || '(Sans titre)', location: task.location || '', description: task.desc || '',
       startRaw, endRaw, startDate, endDate: displayEnd, allDay, hangoutLink: '', recurring: false, isSphaira:true, isObjective,
+      nodeId: task.nodeId || '', nodeName: task.nodeName || '', objectiveRef: (task.objectiveIds||[])[0] || '',
       raw: { task }
     };
   }
@@ -1463,6 +1577,15 @@
       if(payload.endISO){ setTaskField(taskObj, fields.end, payload.endISO, 'end'); }
     }
     if(payload.allDay !== undefined){ taskObj.allDay = !!payload.allDay; }
+    if(payload.objectiveRef !== undefined){
+      const refs = payload.objectiveRef ? [payload.objectiveRef] : [];
+      taskObj.objectiveIds = refs.slice();
+      normalized.objectiveIds = refs.slice();
+    }else if(payload.objectiveRefs !== undefined){
+      const refs = Array.isArray(payload.objectiveRefs) ? payload.objectiveRefs.filter(Boolean) : [];
+      taskObj.objectiveIds = refs.slice();
+      normalized.objectiveIds = refs.slice();
+    }
     return true;
   }
   function removeTaskRecursive(node, normalized){
@@ -1506,11 +1629,227 @@
     const newEnd = new Date(newStart.valueOf() + durationMs);
     return updateSphairaTask(ev, { allDay: false, startISO: newStart.toISOString(), endISO: newEnd.toISOString() });
   }
+
+  function computePrincipalCircles(ws){
+    const nodes = Array.isArray(ws?.nodes) ? ws.nodes : [];
+    const decorated = nodes.map(n=>{
+      const id = n?.id;
+      const name = (n?.text || n?.title || n?.name || id || '').trim();
+      const color = n?.color || '#00EAFF';
+      const rawSize = n?.size ?? n?.w ?? n?.width ?? n?.diameter ?? null;
+      const size = typeof rawSize === 'string' ? parseFloat(rawSize) : (typeof rawSize === 'number' ? rawSize : null);
+      return { id: id ? String(id) : '', name: name || (id ? String(id) : ''), color, size };
+    }).filter(entry=> entry.id && entry.id !== 'node-0');
+    const sized = decorated.filter(entry=> Number.isFinite(entry.size));
+    const threshold = 108;
+    let mains = sized.filter(entry=> (entry.size || 0) >= threshold);
+    if(!mains.length){ mains = decorated.slice(); }
+    mains.sort((a,b)=> a.name.localeCompare(b.name, 'fr', { sensitivity:'base' }));
+    return mains;
+  }
+
+  function updateTaskFilterOptions(circles){
+    principalCircleOptions = Array.isArray(circles) ? circles : [];
+    if(!taskCircleFilter || !taskFilterRow) return;
+    if(!principalCircleOptions.length){
+      taskFilterRow.classList.add('hidden');
+      taskCircleFilter.innerHTML = '<option value="all">Tous les cercles principaux</option>';
+      taskCircleFilter.value = 'all';
+      currentTaskCircleFilter = 'all';
+      try{ localStorage.removeItem(PERSIST_KEYS.taskFilter); }catch{}
+      return;
+    }
+    taskFilterRow.classList.remove('hidden');
+    const previous = currentTaskCircleFilter;
+    const frag = document.createDocumentFragment();
+    const baseOption = document.createElement('option');
+    baseOption.value = 'all';
+    baseOption.textContent = 'Tous les cercles principaux';
+    frag.appendChild(baseOption);
+    principalCircleOptions.forEach(circle=>{
+      const opt = document.createElement('option');
+      opt.value = circle.id;
+      opt.textContent = circle.name || circle.id;
+      frag.appendChild(opt);
+    });
+    taskCircleFilter.innerHTML = '';
+    taskCircleFilter.appendChild(frag);
+    if(principalCircleOptions.some(circle=> circle.id === previous)){
+      taskCircleFilter.value = previous;
+    }else{
+      taskCircleFilter.value = 'all';
+      currentTaskCircleFilter = 'all';
+      try{ localStorage.setItem(PERSIST_KEYS.taskFilter, 'all'); }catch{}
+    }
+  }
+
+  function collectNodeObjectives(ws){
+    const results = [];
+    if(!ws) return results;
+    const nodes = Array.isArray(ws.nodes) ? ws.nodes : [];
+    nodes.forEach(n=>{
+      const nodeId = n?.id ? String(n.id) : '';
+      const nodeName = (n?.text || n?.title || n?.name || nodeId || '').trim();
+      const list = Array.isArray(n.objectives) ? n.objectives : Array.isArray(n._objectives) ? n._objectives : [];
+      list.forEach(obj=>{
+        if(!obj) return;
+        const id = obj.id ? String(obj.id) : '';
+        if(!id) return;
+        const title = obj.title || obj.name || obj.label || id;
+        const ref = nodeId ? `${nodeId}::${id}` : id;
+        results.push({ ref, title, nodeId, nodeName });
+      });
+    });
+    const globals = Array.isArray(ws.objectives) ? ws.objectives : [];
+    globals.forEach(obj=>{
+      if(!obj) return;
+      const id = obj.id ? String(obj.id) : '';
+      if(!id) return;
+      const title = obj.title || obj.name || obj.label || id;
+      results.push({ ref: id, title, nodeId:'', nodeName:'Objectifs globaux' });
+    });
+    return results;
+  }
+
+  function populateTaskObjectiveSelect(task){
+    if(!taskModalObjective) return;
+    const workspace = (sphairaWorkspace && sphairaWorkspace.json) || loadWorkspaceFromStorage().json;
+    const objectives = collectNodeObjectives(workspace);
+    const nodeId = task?.nodeId || '';
+    const selected = Array.isArray(task?.objectiveIds) ? (task.objectiveIds[0] || '') : '';
+    const relevant = [];
+    const others = [];
+    objectives.forEach(obj=>{
+      if(nodeId && obj.nodeId === nodeId){ relevant.push(obj); return; }
+      if(!nodeId && !obj.nodeId){ relevant.push(obj); return; }
+      others.push(obj);
+    });
+
+    taskModalObjective.innerHTML = '';
+    const baseOpt = document.createElement('option');
+    baseOpt.value = '';
+    baseOpt.textContent = '— Aucun objectif —';
+    taskModalObjective.appendChild(baseOpt);
+
+    const addGroup = (label, arr)=>{
+      if(!arr.length) return;
+      if(label){
+        const group = document.createElement('optgroup');
+        group.label = label;
+        arr.forEach(obj=>{
+          const opt = document.createElement('option');
+          opt.value = obj.ref;
+          opt.textContent = obj.title || obj.ref;
+          group.appendChild(opt);
+        });
+        taskModalObjective.appendChild(group);
+      }else{
+        arr.forEach(obj=>{
+          const opt = document.createElement('option');
+          opt.value = obj.ref;
+          opt.textContent = obj.title || obj.ref;
+          taskModalObjective.appendChild(opt);
+        });
+      }
+    };
+
+    const circleLabel = nodeId
+      ? `Objectifs · ${task?.nodeName || (objectives.find(o=>o.nodeId === nodeId)?.nodeName || 'Cercle')}`
+      : (relevant.length ? 'Objectifs liés' : 'Objectifs');
+
+    addGroup(relevant.length ? circleLabel : '', relevant);
+    addGroup(others.length ? 'Autres objectifs' : '', others);
+
+    let matched = false;
+    Array.from(taskModalObjective.options).forEach(opt=>{ if(opt.value === selected){ matched = true; } });
+    if(selected && !matched){
+      const ghost = document.createElement('option');
+      ghost.value = selected;
+      ghost.textContent = selected;
+      ghost.selected = true;
+      ghost.dataset.ghost = 'true';
+      taskModalObjective.appendChild(ghost);
+      matched = true;
+    }
+    taskModalObjective.value = matched ? selected : '';
+    taskModalObjective.disabled = taskModalObjective.options.length <= 1;
+  }
+
+  function openSphairaTaskModal(existing){
+    currentEvent = existing;
+    const normalized = existing?.raw?.task;
+    if(!normalized){ alert('Tâche SPHAIRA introuvable.'); return; }
+    if(!sphairaWorkspace || !sphairaWorkspace.json){ sphairaWorkspace = loadWorkspaceFromStorage(); }
+
+    const summary = existing.summary || normalized.title || '';
+    taskModalTitle.value = summary;
+    taskModalDesc.value = normalized.desc || '';
+
+    const rawStart = normalized.start ? coerceDateInput(normalized.start) : '';
+    const rawEnd = normalized.end ? coerceDateInput(normalized.end) : '';
+    const fallbackDate = rawEnd ? rawEnd.slice(0,10) : '';
+    const startIso = existing.startDate ? toDateOnlyString(existing.startDate) : (rawStart ? rawStart.slice(0,10) : fallbackDate);
+    const endIso = existing.endDate ? toDateOnlyString(existing.endDate) : (rawEnd ? rawEnd.slice(0,10) : (startIso || fallbackDate));
+    taskModalStart.value = startIso || '';
+    taskModalEnd.value = endIso || startIso || '';
+
+    if(taskModalContext){
+      const ctx = normalized.nodeName || '';
+      if(ctx){ taskModalContext.textContent = `Cercle : ${ctx}`; taskModalContext.style.display = ''; }
+      else { taskModalContext.textContent = ''; taskModalContext.style.display = 'none'; }
+    }
+
+    populateTaskObjectiveSelect(normalized);
+    if(taskModalDelete){ taskModalDelete.style.display = ''; }
+    if(taskModal){ taskModal.style.display = 'flex'; taskModal.setAttribute('aria-hidden','false'); }
+    setTimeout(()=>{ try{ taskModalTitle?.focus(); }catch{} }, 50);
+  }
+
+  function closeTaskModal(){
+    if(taskModal){ taskModal.style.display = 'none'; taskModal.setAttribute('aria-hidden','true'); }
+    if(taskModalDelete){ taskModalDelete.style.display = 'none'; }
+    currentEvent = null;
+  }
+
+  function handleTaskModalSave(){
+    if(!currentEvent || !currentEvent.isSphaira || currentEvent.isObjective){ closeTaskModal(); return; }
+    const title = (taskModalTitle.value || '').trim();
+    if(!title){ alert('Titre requis.'); taskModalTitle.focus(); return; }
+    const startValue = taskModalStart.value;
+    const endValue = taskModalEnd.value || startValue;
+    if(!startValue || !endValue){ alert('Début et fin requis.'); return; }
+    const start = toDate(`${startValue}T00:00`);
+    const end = toDate(`${endValue}T00:00`);
+    if(!start || !end){ alert('Dates invalides.'); return; }
+    if(end < start){ alert('La date de fin ne peut pas être antérieure à la date de début.'); return; }
+    const description = taskModalDesc.value || '';
+    const objectiveRef = taskModalObjective ? (taskModalObjective.value || '') : '';
+    const ok = updateSphairaTask(currentEvent, {
+      summary: title,
+      description,
+      allDay: true,
+      startDate: toDateOnlyString(start),
+      endDate: toDateOnlyString(end),
+      objectiveRef
+    });
+    if(!ok){ alert('Impossible de mettre à jour la tâche SPHAIRA.'); return; }
+    if(!persistSphairaWorkspace()){ alert('Impossible d’enregistrer les modifications SPHAIRA.'); return; }
+    closeTaskModal();
+    renderTasks();
+    setStatus('Tâche SPHAIRA enregistrée.');
+  }
   function renderTasks(){
     const { json, storageKey } = loadWorkspaceFromStorage();
     sphairaWorkspace = { json, storageKey };
     const list = json ? extractTasks(json, storageKey) : [];
-    const filteredList = list.filter(task=> !isTaskCompleted(task));
+    updateTaskFilterOptions(computePrincipalCircles(json));
+
+    const filterId = currentTaskCircleFilter;
+    const filteredList = list.filter(task=>{
+      if(isTaskCompleted(task)) return false;
+      if(filterId && filterId !== 'all'){ return task.nodeId && task.nodeId === filterId; }
+      return true;
+    });
     filteredList.sort((a,b)=> (a.start||'').localeCompare(b.start||'') || a.title.localeCompare(b.title));
     sphairaEvents = filteredList.map(taskToEvent).filter(Boolean);
     const eventById = new Map(sphairaEvents.map(ev=>[ev.id, ev]));
@@ -1523,7 +1862,11 @@
     }
 
     if(!filteredList.length){
-      taskListEl.innerHTML = '<div class="status">Aucune tâche ou objectif trouvé.</div>';
+      const activeCircle = principalCircleOptions.find(c=> c.id === filterId);
+      const message = activeCircle
+        ? `Aucune tâche ou objectif trouvé pour ${escapeHtml(activeCircle.name)}.`
+        : 'Aucune tâche ou objectif trouvé.';
+      taskListEl.innerHTML = `<div class="status">${message}</div>`;
     }else{
       taskListEl.innerHTML = '';
       filteredList.forEach(t=>{
@@ -1637,6 +1980,30 @@
     logoutBtn.onclick = logoutGoogle;
   }
   bindAuth();
+
+  if(taskCircleFilter){
+    taskCircleFilter.addEventListener('change', ()=>{
+      currentTaskCircleFilter = taskCircleFilter.value || 'all';
+      try{ localStorage.setItem(PERSIST_KEYS.taskFilter, currentTaskCircleFilter); }catch{}
+      renderTasks();
+    });
+  }
+  if(taskModalCancel){ taskModalCancel.onclick = closeTaskModal; }
+  if(taskModalSave){ taskModalSave.onclick = handleTaskModalSave; }
+  if(taskModalDelete){
+    taskModalDelete.onclick = ()=>{
+      if(!currentEvent || !currentEvent.isSphaira) return;
+      const confirmed = confirm(currentEvent.isObjective ? 'Supprimer cet objectif ?' : 'Supprimer cette tâche ?');
+      if(!confirmed) return;
+      handleDeleteCurrentEvent({ onDone: closeTaskModal });
+    };
+  }
+  if(taskModal){
+    taskModal.addEventListener('click', (e)=>{ if(e.target === taskModal){ closeTaskModal(); } });
+  }
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && taskModal && taskModal.style.display === 'flex'){ closeTaskModal(); }
+  });
 
   async function checkAuth(){
     let session = null;
