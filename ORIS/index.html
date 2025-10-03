@@ -53,9 +53,8 @@
     }
     @keyframes float{from{transform:translateY(-1.5%)}to{transform:translateY(1.5%)}}
 
-    .shell{display:grid; grid-template-columns: 1fr var(--sidebar-w); gap:12px; min-height:100vh; padding:12px; max-width:1600px; margin:0 auto}
+    .shell{display:flex; flex-direction:column; gap:12px; min-height:100vh; padding:12px; max-width:1600px; margin:0 auto}
     .main{display:flex; flex-direction:column; min-width:0}
-    .right{display:flex; flex-direction:column; min-width:0}
 
     .topbar{
       height:var(--toolbar-h);
@@ -113,31 +112,26 @@
     .cell.drag-over{outline:1px dashed rgba(0,234,255,.6); background:rgba(0,234,255,.08)}
     .when{opacity:.8; font-size:11px}
 
-    /* Right panel */
-    .panel{height:100%; display:grid; grid-template-rows: var(--toolbar-h) 1fr;}
-    .panel-head{
-      display:flex; align-items:center; gap:8px; background:var(--glass); border:1px solid var(--grid); border-radius:16px; padding:10px 12px;
+    /* Calendar controls */
+    .calendar-controls{display:flex; flex-wrap:wrap; gap:12px; margin-top:12px;}
+    .control-card{
+      flex:1 1 280px;
+      background:var(--glass); border:1px solid var(--grid); border-radius:16px; padding:12px;
       box-shadow:0 12px 40px rgba(0,0,0,.35); backdrop-filter: blur(8px);
+      min-width:220px;
     }
-    .panel-body{
-      margin-top:12px; background:var(--glass); border:1px solid var(--grid); border-radius:16px; padding:10px; overflow:auto;
-      box-shadow:0 12px 40px rgba(0,0,0,.35); backdrop-filter: blur(8px);
-    }
-    .section{border:1px solid var(--grid); border-radius:12px; padding:10px; margin-bottom:10px; background:rgba(255,255,255,.03)}
-    .section h3{margin:0 0 8px; font-family:Orbitron,sans-serif; letter-spacing:.06em; font-size:14px}
-    .cal-item{display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--grid); border-radius:10px; margin:6px 0; background:rgba(0,0,0,.25); cursor:pointer}
+    .control-card h3{margin:0 0 8px; font-family:Orbitron,sans-serif; letter-spacing:.06em; font-size:14px}
+    .cal-list{display:flex; flex-direction:column; gap:6px; max-height:260px; overflow:auto; padding-right:4px;}
+    .cal-item{display:flex; align-items:center; gap:8px; padding:6px 8px; margin:2px 0; border:1px solid var(--grid); border-radius:10px; background:rgba(0,0,0,.25); cursor:pointer}
     .cal-item input[type="checkbox"]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex:0 0 auto}
     .cal-item.cal-hidden{opacity:.45}
     .dot{width:10px;height:10px;border-radius:9999px;border:1px solid var(--grid);flex:0 0 auto}
-    .task{display:flex; align-items:flex-start; gap:8px; border:1px solid var(--grid); border-radius:10px; padding:8px; margin:6px 0; background:rgba(0,0,0,.25)}
-    .task.objective{border-color:#39ff14; box-shadow:0 0 8px rgba(57,255,20,.75), 0 0 20px rgba(57,255,20,.35);}
-    .badge-objective{display:inline-block; padding:2px 6px; border-radius:999px; border:1px solid rgba(57,255,20,.65); color:#39ff14; font-size:10px; letter-spacing:.04em; text-transform:uppercase; margin-bottom:4px;}
-    .task small{color:var(--muted)}
-    .task-filter{display:flex; flex-direction:column; gap:6px; margin-bottom:10px;}
-    .task-filter label{font-size:12px; color:var(--muted); letter-spacing:.02em;}
-    .task-filter select{width:100%;}
-    .task-filter.hidden{display:none;}
-    .task-actions{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;}
+    .task-filters-card{display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;}
+    .task-filters-card.hidden{display:none;}
+    .task-filter-group{display:flex; flex-direction:column; gap:6px; flex:1 1 200px; min-width:180px;}
+    .task-filter-group.hidden{display:none;}
+    .task-filter-group label{font-size:12px; color:var(--muted); letter-spacing:.02em;}
+    .task-filters-card .status{flex-basis:100%; margin-top:6px;}
 
     .task-modal-card{display:flex; flex-direction:column; gap:12px; background:linear-gradient(180deg, rgba(15,22,44,.92), rgba(6,10,24,.9)); border:1px solid rgba(255,255,255,.08); box-shadow:0 24px 60px rgba(0,0,0,.45);}
     .task-modal-header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
@@ -161,6 +155,8 @@
     label{font-size:12px; color:var(--muted)}
     input, textarea, select{width:100%; background:rgba(0,0,0,.25); color:var(--text); border:1px solid var(--grid); border-radius:10px; padding:8px}
     textarea{min-height:96px; resize:vertical}
+    .event-actions{margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;}
+    .event-actions .btn{padding:4px 10px; font-size:11px; border-radius:8px;}
 
     /* AUTH LOCK */
     .auth-block{
@@ -243,6 +239,7 @@
               <option value="">Tous les calendriers</option>
             </select>
             <button id="newEventBtn" class="btn small" title="Nouveau (N)">+ Nouvel événement</button>
+            <button id="refreshBtn" class="btn small" title="Rafraîchir">Rafraîchir</button>
             <span id="status" class="status" role="status">Connexion requise.</span>
           </div>
           <div class="spacer"></div>
@@ -250,35 +247,29 @@
             <span class="status" id="periodLabel">—</span>
           </div>
         </div>
+        <div class="calendar-controls" aria-label="Contrôles du calendrier">
+          <div class="control-card" aria-live="polite">
+            <h3>Calendriers</h3>
+            <div id="calList" class="cal-list"></div>
+          </div>
+          <div id="taskFiltersRow" class="control-card task-filters-card hidden" aria-live="polite">
+            <div id="taskFilterPrimaryGroup" class="task-filter-group">
+              <label for="taskCircleFilterPrimary">Cercles principaux</label>
+              <select id="taskCircleFilterPrimary" class="select">
+                <option value="all">Tous les cercles principaux</option>
+              </select>
+            </div>
+            <div id="taskFilterSecondaryGroup" class="task-filter-group">
+              <label for="taskCircleFilterSecondary">Cercles secondaires</label>
+              <select id="taskCircleFilterSecondary" class="select">
+                <option value="all">Tous les cercles secondaires</option>
+              </select>
+            </div>
+            <p class="status" style="margin:0">Source : SPHAIRA (localStorage).</p>
+          </div>
+        </div>
         <div id="canvas" class="calendar-canvas">
           <div id="grid" class="grid month"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT PANEL -->
-    <div class="right panel">
-      <div class="panel-head">
-        <strong style="font-family:Orbitron">ORIS — Panneau</strong>
-        <div class="spacer"></div>
-        <button id="toggleTasks" class="btn small" aria-expanded="true">Tâches</button>
-        <button id="refreshBtn" class="btn small">Rafraîchir</button>
-      </div>
-      <div class="panel-body" id="sideBody">
-        <div class="section" id="calendarsSection">
-          <h3>Calendriers</h3>
-          <div id="calList"></div>
-        </div>
-        <div class="section" id="tasksSection">
-          <h3>Tâches &amp; Objectifs (SPHAIRA)</h3>
-          <div id="taskFilterRow" class="task-filter hidden">
-            <label for="taskCircleFilter">Par cercle principal</label>
-            <select id="taskCircleFilter" class="select">
-              <option value="all">Tous les cercles principaux</option>
-            </select>
-          </div>
-          <div id="taskList">—</div>
-          <div style="margin-top:6px" class="status">Source : SPHAIRA (localStorage).</div>
         </div>
       </div>
     </div>
@@ -419,7 +410,8 @@
     cursor: 'oris:cursorISO',
     visible: 'oris:visibleCals',
     selected: 'oris:selectedCal',
-    taskFilter: 'oris:taskCircleFilter'
+    taskFilterPrimary: 'oris:taskCircleFilter:primary',
+    taskFilterSecondary: 'oris:taskCircleFilter:secondary'
   };
 
   /* ==============================
@@ -457,11 +449,11 @@
   const logoutBtn = document.getElementById('logoutBtn');
 
   const calListEl = document.getElementById('calList');
-  const tasksSection = document.getElementById('tasksSection');
-  const taskListEl = document.getElementById('taskList');
-  const taskFilterRow = document.getElementById('taskFilterRow');
-  const taskCircleFilter = document.getElementById('taskCircleFilter');
-  const toggleTasksBtn = document.getElementById('toggleTasks');
+  const taskFiltersRow = document.getElementById('taskFiltersRow');
+  const taskFilterPrimaryGroup = document.getElementById('taskFilterPrimaryGroup');
+  const taskFilterSecondaryGroup = document.getElementById('taskFilterSecondaryGroup');
+  const taskCircleFilterPrimary = document.getElementById('taskCircleFilterPrimary');
+  const taskCircleFilterSecondary = document.getElementById('taskCircleFilterSecondary');
 
   const eventModal = document.getElementById('eventModal');
   const evtTitle = document.getElementById('evtTitle');
@@ -521,17 +513,21 @@
   let dragSourceEl = null;
   let isDraggingEvent = false;
   let principalCircleOptions = [];
-  let currentTaskCircleFilter = 'all';
+  let secondaryCircleOptions = [];
+  let currentPrimaryCircleFilter = 'all';
+  let currentSecondaryCircleFilter = 'all';
   try{
-    const storedFilter = localStorage.getItem(PERSIST_KEYS.taskFilter);
-    if(storedFilter){ currentTaskCircleFilter = storedFilter; }
+    const storedPrimary = localStorage.getItem(PERSIST_KEYS.taskFilterPrimary);
+    if(storedPrimary){ currentPrimaryCircleFilter = storedPrimary; }
+  }catch{}
+  try{
+    const storedSecondary = localStorage.getItem(PERSIST_KEYS.taskFilterSecondary);
+    if(storedSecondary){ currentSecondaryCircleFilter = storedSecondary; }
   }catch{}
 
   function setStatus(t){ statusEl.textContent = t; }
   function setAuthLocked(on){
     document.body.classList.toggle('auth-locked', !!on);
-    const expanded = !on;
-    toggleTasksBtn.setAttribute('aria-expanded', String(expanded));
   }
 
   function hasActiveDemoAuth(){
@@ -1105,6 +1101,18 @@
             div.className='event' + (ev.isObjective ? ' objective' : '');
             const when = ev.allDay ? 'Journée' : `${ev.startDate.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
             div.innerHTML = `<div style="display:flex;gap:6px;align-items:center"><span class="dot" style="background:${ev.color}"></span><strong>${escapeHtml(ev.summary)}</strong></div><div class="when">${when} — ${escapeHtml(ev.calName)}</div>`;
+            if(ev.isSphaira && !ev.isObjective){
+              const actions = document.createElement('div');
+              actions.className = 'event-actions';
+              const doneBtn = document.createElement('button');
+              doneBtn.type = 'button';
+              doneBtn.className = 'btn small';
+              doneBtn.draggable = false;
+              doneBtn.textContent = 'Valider';
+              doneBtn.onclick = (evt)=>{ evt.stopPropagation(); completeSphairaTask(ev); };
+              actions.appendChild(doneBtn);
+              div.appendChild(actions);
+            }
             setupEventInteractions(div, ev);
             cell.appendChild(div);
           });
@@ -1131,6 +1139,18 @@
         const endDisplay = ev.endDate || ev.startDate;
         const when = ev.allDay ? 'Journée' : `${ev.startDate.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} → ${endDisplay.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
         div.innerHTML = `<div style="display:flex;gap:6px;align-items:center"><span class="dot" style="background:${ev.color}"></span><strong>${escapeHtml(ev.summary)}</strong></div><div class="when">${when} — ${escapeHtml(ev.calName)}</div>${ev.location?`<div class="when">📍 ${escapeHtml(ev.location)}</div>`:''}${ev.hangoutLink?`<div class="when">🔗 <a href="${ev.hangoutLink}" target="_blank" rel="noreferrer">Meet</a></div>`:''}`;
+        if(ev.isSphaira && !ev.isObjective){
+          const actions = document.createElement('div');
+          actions.className = 'event-actions';
+          const doneBtn = document.createElement('button');
+          doneBtn.type = 'button';
+          doneBtn.className = 'btn small';
+          doneBtn.draggable = false;
+          doneBtn.textContent = 'Valider';
+          doneBtn.onclick = (evt)=>{ evt.stopPropagation(); completeSphairaTask(ev); };
+          actions.appendChild(doneBtn);
+          div.appendChild(actions);
+        }
         setupEventInteractions(div, ev);
         cell.appendChild(div);
       });
@@ -1636,7 +1656,7 @@
     return updateSphairaTask(ev, { allDay: false, startISO: newStart.toISOString(), endISO: newEnd.toISOString() });
   }
 
-  function computePrincipalCircles(ws){
+  function computeCircleGroups(ws){
     const nodes = Array.isArray(ws?.nodes) ? ws.nodes : [];
     const decorated = nodes.map(n=>{
       const id = n?.id;
@@ -1648,44 +1668,103 @@
     }).filter(entry=> entry.id && entry.id !== 'node-0');
     const sized = decorated.filter(entry=> Number.isFinite(entry.size));
     const threshold = 108;
-    let mains = sized.filter(entry=> (entry.size || 0) >= threshold);
-    if(!mains.length){ mains = decorated.slice(); }
-    mains.sort((a,b)=> a.name.localeCompare(b.name, 'fr', { sensitivity:'base' }));
-    return mains;
+    let principal = sized.filter(entry=> (entry.size || 0) >= threshold);
+    if(!principal.length){ principal = decorated.slice(); }
+    const principalIds = new Set(principal.map(entry=> entry.id));
+    const secondary = decorated.filter(entry=> !principalIds.has(entry.id));
+    principal.sort((a,b)=> a.name.localeCompare(b.name, 'fr', { sensitivity:'base' }));
+    secondary.sort((a,b)=> a.name.localeCompare(b.name, 'fr', { sensitivity:'base' }));
+    return { principal, secondary };
   }
 
-  function updateTaskFilterOptions(circles){
-    principalCircleOptions = Array.isArray(circles) ? circles : [];
-    if(!taskCircleFilter || !taskFilterRow) return;
-    if(!principalCircleOptions.length){
-      taskFilterRow.classList.add('hidden');
-      taskCircleFilter.innerHTML = '<option value="all">Tous les cercles principaux</option>';
-      taskCircleFilter.value = 'all';
-      currentTaskCircleFilter = 'all';
-      try{ localStorage.removeItem(PERSIST_KEYS.taskFilter); }catch{}
+  function updateTaskFilterOptions(groups){
+    principalCircleOptions = Array.isArray(groups?.principal) ? groups.principal : [];
+    secondaryCircleOptions = Array.isArray(groups?.secondary) ? groups.secondary : [];
+    if(!taskFiltersRow) return;
+
+    const hasPrimary = principalCircleOptions.length > 0;
+    const hasSecondary = secondaryCircleOptions.length > 0;
+
+    const populateSelect = (selectEl, options, baseLabel, currentValue)=>{
+      if(!selectEl) return 'all';
+      const frag = document.createDocumentFragment();
+      const baseOption = document.createElement('option');
+      baseOption.value = 'all';
+      baseOption.textContent = baseLabel;
+      frag.appendChild(baseOption);
+      options.forEach(circle=>{
+        const opt = document.createElement('option');
+        opt.value = circle.id;
+        opt.textContent = circle.name || circle.id;
+        frag.appendChild(opt);
+      });
+      selectEl.innerHTML = '';
+      selectEl.appendChild(frag);
+      if(options.some(circle=> circle.id === currentValue)){
+        selectEl.value = currentValue;
+        return currentValue;
+      }
+      selectEl.value = 'all';
+      return 'all';
+    };
+
+    if(!hasPrimary && !hasSecondary){
+      taskFiltersRow.classList.add('hidden');
+      if(taskCircleFilterPrimary){
+        taskCircleFilterPrimary.innerHTML = '<option value="all">Tous les cercles principaux</option>';
+        taskCircleFilterPrimary.value = 'all';
+      }
+      if(taskCircleFilterSecondary){
+        taskCircleFilterSecondary.innerHTML = '<option value="all">Tous les cercles secondaires</option>';
+        taskCircleFilterSecondary.value = 'all';
+      }
+      currentPrimaryCircleFilter = 'all';
+      currentSecondaryCircleFilter = 'all';
+      try{ localStorage.removeItem(PERSIST_KEYS.taskFilterPrimary); }catch{}
+      try{ localStorage.removeItem(PERSIST_KEYS.taskFilterSecondary); }catch{}
       return;
     }
-    taskFilterRow.classList.remove('hidden');
-    const previous = currentTaskCircleFilter;
-    const frag = document.createDocumentFragment();
-    const baseOption = document.createElement('option');
-    baseOption.value = 'all';
-    baseOption.textContent = 'Tous les cercles principaux';
-    frag.appendChild(baseOption);
-    principalCircleOptions.forEach(circle=>{
-      const opt = document.createElement('option');
-      opt.value = circle.id;
-      opt.textContent = circle.name || circle.id;
-      frag.appendChild(opt);
-    });
-    taskCircleFilter.innerHTML = '';
-    taskCircleFilter.appendChild(frag);
-    if(principalCircleOptions.some(circle=> circle.id === previous)){
-      taskCircleFilter.value = previous;
-    }else{
-      taskCircleFilter.value = 'all';
-      currentTaskCircleFilter = 'all';
-      try{ localStorage.setItem(PERSIST_KEYS.taskFilter, 'all'); }catch{}
+
+    taskFiltersRow.classList.remove('hidden');
+
+    if(taskFilterPrimaryGroup){
+      if(hasPrimary){
+        taskFilterPrimaryGroup.classList.remove('hidden');
+        const nextPrimary = populateSelect(taskCircleFilterPrimary, principalCircleOptions, 'Tous les cercles principaux', currentPrimaryCircleFilter);
+        currentPrimaryCircleFilter = nextPrimary;
+        if(currentPrimaryCircleFilter !== 'all'){
+          try{ localStorage.setItem(PERSIST_KEYS.taskFilterPrimary, currentPrimaryCircleFilter); }catch{}
+        }else{
+          try{ localStorage.removeItem(PERSIST_KEYS.taskFilterPrimary); }catch{}
+        }
+      }else{
+        taskFilterPrimaryGroup.classList.add('hidden');
+        currentPrimaryCircleFilter = 'all';
+        try{ localStorage.removeItem(PERSIST_KEYS.taskFilterPrimary); }catch{}
+      }
+    }
+
+    if(taskFilterSecondaryGroup){
+      if(hasSecondary){
+        taskFilterSecondaryGroup.classList.remove('hidden');
+        const nextSecondary = populateSelect(taskCircleFilterSecondary, secondaryCircleOptions, 'Tous les cercles secondaires', currentSecondaryCircleFilter);
+        currentSecondaryCircleFilter = nextSecondary;
+        if(currentSecondaryCircleFilter !== 'all'){
+          try{ localStorage.setItem(PERSIST_KEYS.taskFilterSecondary, currentSecondaryCircleFilter); }catch{}
+        }else{
+          try{ localStorage.removeItem(PERSIST_KEYS.taskFilterSecondary); }catch{}
+        }
+      }else{
+        taskFilterSecondaryGroup.classList.add('hidden');
+        currentSecondaryCircleFilter = 'all';
+        try{ localStorage.removeItem(PERSIST_KEYS.taskFilterSecondary); }catch{}
+      }
+    }
+
+    if(currentPrimaryCircleFilter !== 'all' && currentSecondaryCircleFilter !== 'all'){
+      currentSecondaryCircleFilter = 'all';
+      if(taskCircleFilterSecondary){ taskCircleFilterSecondary.value = 'all'; }
+      try{ localStorage.removeItem(PERSIST_KEYS.taskFilterSecondary); }catch{}
     }
   }
 
@@ -1859,62 +1938,24 @@
     const { json, storageKey } = loadWorkspaceFromStorage();
     sphairaWorkspace = { json, storageKey };
     const list = json ? extractTasks(json, storageKey) : [];
-    updateTaskFilterOptions(computePrincipalCircles(json));
+    updateTaskFilterOptions(computeCircleGroups(json));
 
-    const filterId = currentTaskCircleFilter;
+    const primaryFilter = currentPrimaryCircleFilter;
+    const secondaryFilter = currentSecondaryCircleFilter;
     const filteredList = list.filter(task=>{
       if(isTaskCompleted(task)) return false;
-      if(filterId && filterId !== 'all'){ return task.nodeId && task.nodeId === filterId; }
+      if(primaryFilter !== 'all' && task.nodeId !== primaryFilter) return false;
+      if(secondaryFilter !== 'all' && task.nodeId !== secondaryFilter) return false;
       return true;
     });
     filteredList.sort((a,b)=> (a.start||'').localeCompare(b.start||'') || a.title.localeCompare(b.title));
     sphairaEvents = filteredList.map(taskToEvent).filter(Boolean);
-    const eventById = new Map(sphairaEvents.map(ev=>[ev.id, ev]));
 
     if(!calendarSelect.querySelector(`option[value="${SPHAIRA_CALENDAR_ID}"]`)){
       const opt = document.createElement('option'); opt.value = SPHAIRA_CALENDAR_ID; opt.textContent = `${SPHAIRA_CALENDAR.summary} (SPHAIRA)`; calendarSelect.appendChild(opt);
     }
-    if(!calListEl.querySelector(`.cal-item[data-calendar-id="${SPHAIRA_CALENDAR_ID}"]`)){
+    if(calListEl && !calListEl.querySelector(`.cal-item[data-calendar-id="${SPHAIRA_CALENDAR_ID}"]`)){
       calListEl.appendChild(createCalendarToggle(SPHAIRA_CALENDAR, true));
-    }
-
-    if(!filteredList.length){
-      const activeCircle = principalCircleOptions.find(c=> c.id === filterId);
-      const message = activeCircle
-        ? `Aucune tâche ou objectif trouvé pour ${escapeHtml(activeCircle.name)}.`
-        : 'Aucune tâche ou objectif trouvé.';
-      taskListEl.innerHTML = `<div class="status">${message}</div>`;
-    }else{
-      taskListEl.innerHTML = '';
-      filteredList.forEach(t=>{
-        const el = document.createElement('div');
-        const isObjective = t.kind === 'objective';
-        const badge = isObjective ? '<span class="badge-objective">Objectif</span><br/>' : '';
-        el.className='task' + (isObjective ? ' objective' : '');
-        el.innerHTML = `<span class="dot" style="background:${t.color}"></span>
-          <div>
-            ${badge}
-            <div><strong>${escapeHtml(t.title)}</strong></div>
-            ${t.status ? `<small>Statut : ${escapeHtml(t.status)}</small><br/>` : ''}
-            ${t.start || t.end ? `<small>${t.start ? 'Du '+escapeHtml(t.start) : ''} ${t.end ? ' au '+escapeHtml(t.end) : ''}</small><br/>` : ''}
-            ${t.nodeName ? `<small>Sur : ${escapeHtml(t.nodeName)}</small>`:''}
-            ${t.desc ? `<div style="margin-top:6px">${escapeHtml(t.desc)}</div>`:''}
-          </div>`;
-        const relatedEvent = eventById.get(t.id);
-        if(relatedEvent){ el.style.cursor = 'pointer'; el.onclick = ()=> openEventModal({ existing: relatedEvent }); }
-        if(relatedEvent && !isObjective){
-          const actions = document.createElement('div');
-          actions.className = 'task-actions';
-          const doneBtn = document.createElement('button');
-          doneBtn.type = 'button';
-          doneBtn.className = 'btn small';
-          doneBtn.textContent = 'Valider';
-          doneBtn.onclick = (evt)=>{ evt.stopPropagation(); completeSphairaTask(relatedEvent); };
-          actions.appendChild(doneBtn);
-          el.appendChild(actions);
-        }
-        taskListEl.appendChild(el);
-      });
     }
     mergeEvents();
   }
@@ -2009,10 +2050,31 @@
   }
   bindAuth();
 
-  if(taskCircleFilter){
-    taskCircleFilter.addEventListener('change', ()=>{
-      currentTaskCircleFilter = taskCircleFilter.value || 'all';
-      try{ localStorage.setItem(PERSIST_KEYS.taskFilter, currentTaskCircleFilter); }catch{}
+  if(taskCircleFilterPrimary){
+    taskCircleFilterPrimary.addEventListener('change', ()=>{
+      currentPrimaryCircleFilter = taskCircleFilterPrimary.value || 'all';
+      if(currentPrimaryCircleFilter !== 'all'){
+        currentSecondaryCircleFilter = 'all';
+        if(taskCircleFilterSecondary){ taskCircleFilterSecondary.value = 'all'; }
+        try{ localStorage.removeItem(PERSIST_KEYS.taskFilterSecondary); }catch{}
+        try{ localStorage.setItem(PERSIST_KEYS.taskFilterPrimary, currentPrimaryCircleFilter); }catch{}
+      }else{
+        try{ localStorage.removeItem(PERSIST_KEYS.taskFilterPrimary); }catch{}
+      }
+      renderTasks();
+    });
+  }
+  if(taskCircleFilterSecondary){
+    taskCircleFilterSecondary.addEventListener('change', ()=>{
+      currentSecondaryCircleFilter = taskCircleFilterSecondary.value || 'all';
+      if(currentSecondaryCircleFilter !== 'all'){
+        currentPrimaryCircleFilter = 'all';
+        if(taskCircleFilterPrimary){ taskCircleFilterPrimary.value = 'all'; }
+        try{ localStorage.removeItem(PERSIST_KEYS.taskFilterPrimary); }catch{}
+        try{ localStorage.setItem(PERSIST_KEYS.taskFilterSecondary, currentSecondaryCircleFilter); }catch{}
+      }else{
+        try{ localStorage.removeItem(PERSIST_KEYS.taskFilterSecondary); }catch{}
+      }
       renderTasks();
     });
   }
