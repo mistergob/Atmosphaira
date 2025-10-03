@@ -137,6 +137,7 @@
     .task-filter label{font-size:12px; color:var(--muted); letter-spacing:.02em;}
     .task-filter select{width:100%;}
     .task-filter.hidden{display:none;}
+    .task-actions{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;}
 
     .task-modal-card{display:flex; flex-direction:column; gap:12px; background:linear-gradient(180deg, rgba(15,22,44,.92), rgba(6,10,24,.9)); border:1px solid rgba(255,255,255,.08); box-shadow:0 24px 60px rgba(0,0,0,.45);}
     .task-modal-header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
@@ -1441,7 +1442,8 @@
       start: gatherFieldNames(task, TASK_START_FIELD_CANDIDATES, 'start'),
       end: gatherFieldNames(task, TASK_END_FIELD_CANDIDATES, 'end'),
       status: gatherFieldNames(task, ['status','state','progress'], status ? 'status' : ''),
-      color: gatherFieldNames(task, ['color','highlight'], '')
+      color: gatherFieldNames(task, ['color','highlight'], ''),
+      done: gatherFieldNames(task, ['done','completed','isDone','is_done','isCompleted','is_completed'], 'done')
     };
     if(!fields.end.length){ fields.end = ['end']; }
     if(!fields.start.length){ fields.start = ['start']; }
@@ -1569,6 +1571,10 @@
     if(payload.location !== undefined){ setTaskField(taskObj, fields.location, payload.location, 'location'); }
     if(payload.status !== undefined){ setTaskField(taskObj, fields.status, payload.status, 'status'); }
     if(payload.color !== undefined){ setTaskField(taskObj, fields.color, payload.color, 'color'); }
+    if(payload.done !== undefined){
+      setTaskField(taskObj, fields.done, !!payload.done, 'done');
+      normalized.done = !!payload.done;
+    }
     if(payload.allDay){
       if(payload.startDate){ setTaskField(taskObj, fields.start, payload.startDate, 'start'); }
       if(payload.endDate){ setTaskField(taskObj, fields.end, payload.endDate, 'end'); }
@@ -1838,6 +1844,17 @@
     renderTasks();
     setStatus('Tâche SPHAIRA enregistrée.');
   }
+  function completeSphairaTask(ev){
+    if(!ev || !ev.isSphaira || ev.isObjective) return;
+    const confirmed = confirm('Valider cette tâche ?');
+    if(!confirmed) return;
+    const ok = updateSphairaTask(ev, { done: true });
+    if(!ok){ alert('Impossible de valider la tâche SPHAIRA.'); return; }
+    if(!persistSphairaWorkspace()){ alert('Impossible d’enregistrer les modifications SPHAIRA.'); return; }
+    if(taskModal && taskModal.style.display === 'flex'){ closeTaskModal(); }
+    renderTasks();
+    setStatus('Tâche SPHAIRA validée.');
+  }
   function renderTasks(){
     const { json, storageKey } = loadWorkspaceFromStorage();
     sphairaWorkspace = { json, storageKey };
@@ -1885,6 +1902,17 @@
           </div>`;
         const relatedEvent = eventById.get(t.id);
         if(relatedEvent){ el.style.cursor = 'pointer'; el.onclick = ()=> openEventModal({ existing: relatedEvent }); }
+        if(relatedEvent && !isObjective){
+          const actions = document.createElement('div');
+          actions.className = 'task-actions';
+          const doneBtn = document.createElement('button');
+          doneBtn.type = 'button';
+          doneBtn.className = 'btn small';
+          doneBtn.textContent = 'Valider';
+          doneBtn.onclick = (evt)=>{ evt.stopPropagation(); completeSphairaTask(relatedEvent); };
+          actions.appendChild(doneBtn);
+          el.appendChild(actions);
+        }
         taskListEl.appendChild(el);
       });
     }
