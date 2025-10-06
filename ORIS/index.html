@@ -364,6 +364,7 @@
       </div>
       <div class="task-modal-actions">
         <button id="taskModalCancel" class="btn ghost" type="button">Annuler</button>
+        <button id="taskModalValidate" class="btn" type="button" style="display:none">Valider</button>
         <button id="taskModalSave" class="btn" type="button">Enregistrer</button>
       </div>
     </div>
@@ -482,6 +483,7 @@
   const taskModalObjective = document.getElementById('taskModalObjective');
   const taskModalContext = document.getElementById('taskModalContext');
   const taskModalSave = document.getElementById('taskModalSave');
+  const taskModalValidate = document.getElementById('taskModalValidate');
   const taskModalCancel = document.getElementById('taskModalCancel');
   const taskModalDelete = document.getElementById('taskModalDelete');
 
@@ -1886,6 +1888,7 @@
 
     populateTaskObjectiveSelect(normalized);
     if(taskModalDelete){ taskModalDelete.style.display = ''; }
+    if(taskModalValidate){ taskModalValidate.style.display = ''; taskModalValidate.disabled = false; }
     if(taskModal){ taskModal.style.display = 'flex'; taskModal.setAttribute('aria-hidden','false'); }
     setTimeout(()=>{ try{ taskModalTitle?.focus(); }catch{} }, 50);
   }
@@ -1893,6 +1896,7 @@
   function closeTaskModal(){
     if(taskModal){ taskModal.style.display = 'none'; taskModal.setAttribute('aria-hidden','true'); }
     if(taskModalDelete){ taskModalDelete.style.display = 'none'; }
+    if(taskModalValidate){ taskModalValidate.style.display = 'none'; }
     currentEvent = null;
   }
 
@@ -2080,6 +2084,11 @@
   }
   if(taskModalCancel){ taskModalCancel.onclick = closeTaskModal; }
   if(taskModalSave){ taskModalSave.onclick = handleTaskModalSave; }
+  if(taskModalValidate){
+    taskModalValidate.onclick = ()=>{
+      if(currentEvent){ completeSphairaTask(currentEvent); }
+    };
+  }
   if(taskModalDelete){
     taskModalDelete.onclick = ()=>{
       if(!currentEvent || !currentEvent.isSphaira) return;
