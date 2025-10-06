@@ -960,7 +960,8 @@ function syncOpenUrlIcon(){
 /* ====== Tâches ====== */
 function updateTaskBadge(node){
   const old=node.querySelector('.task-badge'); if(old) old.remove();
-  const tasks=node._tasks||[]; if(tasks.length===0) return;
+  const tasks=node._tasks||[];
+  if(!tasks.some(task=>!isTaskMarkedDone(task))) return;
   const b=document.createElement('div'); b.className='task-badge'; b.textContent='⭐';
   b.addEventListener('pointerdown',e=>e.stopPropagation()); b.addEventListener('click',e=>e.stopPropagation());
   node.appendChild(b);
