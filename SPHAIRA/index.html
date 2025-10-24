@@ -203,14 +203,15 @@
   #actions .toggle[aria-pressed="true"]{ background:#0b1120; box-shadow: var(--ring); }
 
   .home-btn{
-    position:fixed;bottom:16px;width:44px;height:44px;border-radius:9999px;cursor:pointer;font-size:20px;z-index:65;color:var(--text);
+    position:fixed;bottom:16px;min-width:44px;height:44px;border-radius:9999px;cursor:pointer;font-size:16px;z-index:65;color:var(--text);
     border:1px solid transparent;
     background:linear-gradient(#0c1327,#0b1120) padding-box, conic-gradient(from 180deg, rgba(0,234,255,.8), rgba(138,43,226,.8), rgba(0,234,255,.8)) border-box;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 8px 24px rgba(0,0,0,.45);
     transition: transform .2s ease, filter .2s ease;
+    padding:0 16px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;letter-spacing:.01em;line-height:1;
   }
   .home-btn:hover{ transform: translateY(-2px); filter: var(--glow); }
-  #homeBtn{right:16px} #tasksBtn{right:70px} #objectivesBtn{right:124px}
+  #homeBtn{right:16px} #tasksBtn{right:102px} #objectivesBtn{right:188px} #contactsBtn{right:274px}
 
   .modal{position:fixed;inset:0;background:rgba(3,6,16,.55);display:none;align-items:center;justify-content:center;z-index:90;backdrop-filter: blur(2px)}
   #objectiveEditor{z-index:100;}
@@ -253,6 +254,7 @@
   }
   .task-item small{color:var(--muted)}
   #contactList{max-height:280px;overflow:auto;padding-right:4px;scrollbar-color:rgba(0,234,255,.45) rgba(255,255,255,.05)}
+  #contactsContainer{max-height:420px;overflow:auto;padding-right:4px;scrollbar-color:rgba(0,234,255,.45) rgba(255,255,255,.05)}
   .contact-item{
     position:relative;display:flex;flex-direction:column;gap:10px;padding:14px 16px;
     border-radius:14px;border:1px solid rgba(255,255,255,.12);
@@ -266,6 +268,14 @@
   .contact-name{font-weight:600;letter-spacing:.01em}
   .contact-meta{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
   .contact-actions{display:flex;gap:8px;flex-shrink:0}
+  .contact-meta a{color:inherit;text-decoration:none;border-bottom:1px dashed rgba(0,234,255,.45)}
+  .contact-group{gap:14px}
+  .contact-group-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .contact-group-name{font-size:16px;font-weight:700;letter-spacing:.02em}
+  .contact-group-count{font-size:12px;color:var(--muted)}
+  .contact-group-list{display:flex;flex-direction:column;gap:10px}
+  .contact-entry{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+  .contact-entry-name{font-weight:600;letter-spacing:.01em}
   .task-row{display:flex;align-items:flex-start;gap:12px;justify-content:space-between}
   .task-main{display:flex;gap:12px;align-items:flex-start;flex:1}
   .task-title{display:flex;flex-direction:column;gap:6px;font-weight:600;letter-spacing:.01em}
@@ -431,6 +441,7 @@
   </div>
 
   <!-- Boutons -->
+  <button id="contactsBtn" class="home-btn" title="Voir tous les contacts">📇 Contacts</button>
   <button id="objectivesBtn" class="home-btn" title="Voir les objectifs">🎯</button>
   <button id="tasksBtn" class="home-btn" title="Voir toutes les tâches">⭐</button>
   <button id="homeBtn" class="home-btn" title="Recentrer sur le cœur">♥</button>
@@ -492,12 +503,22 @@
       <div class="row"><label>Nom</label><input id="contactLast" type="text" placeholder="Nom"/></div>
       <div class="row"><label>Prénom</label><input id="contactFirst" type="text" placeholder="Prénom"/></div>
       <div class="row"><label>Téléphone</label><input id="contactPhone" type="tel" placeholder="Numéro de téléphone"/></div>
+      <div class="row"><label>Mail</label><input id="contactEmail" type="email" placeholder="Adresse e-mail"/></div>
       <div class="actions">
         <button id="contactCancel" class="btn secondary" type="button">Fermer</button>
         <button id="contactSave" class="btn" type="button">Ajouter</button>
       </div>
       <h3>Liste des contacts</h3>
       <div id="contactList" class="list"></div>
+    </div>
+  </div>
+
+  <!-- Modale Contacts (globale) -->
+  <div id="contactsModal" class="modal" aria-hidden="true">
+    <div class="card">
+      <h3>Tous les contacts</h3>
+      <div id="contactsContainer" class="list"></div>
+      <div class="actions"><button id="contactsClose" class="btn">Fermer</button></div>
     </div>
   </div>
 
@@ -555,6 +576,7 @@ const resetBtn=document.getElementById('resetBtn');
 const fileInput=document.getElementById('fileInput');
 const homeBtn=document.getElementById('homeBtn');
 const wireModeBtn=document.getElementById('wireModeBtn');
+const contactsBtn=document.getElementById('contactsBtn');
 const tasksBtn=document.getElementById('tasksBtn');
 const objectivesBtn=document.getElementById('objectivesBtn');
 const tasksShowCompletedBtn=document.getElementById('tasksShowCompleted');
@@ -625,9 +647,13 @@ const contactModal=document.getElementById('contactModal');
 const contactLast=document.getElementById('contactLast');
 const contactFirst=document.getElementById('contactFirst');
 const contactPhone=document.getElementById('contactPhone');
+const contactEmail=document.getElementById('contactEmail');
 const contactSave=document.getElementById('contactSave');
 const contactCancel=document.getElementById('contactCancel');
 const contactList=document.getElementById('contactList');
+const contactsModal=document.getElementById('contactsModal');
+const contactsContainer=document.getElementById('contactsContainer');
+const contactsClose=document.getElementById('contactsClose');
 
 /* Global task form */
 const taskGlobalNodeSelect=document.getElementById('taskGlobalNodeSelect');
@@ -1019,19 +1045,21 @@ function deleteTaskFromNode(node, taskId){
 function updateContactBadge(node){
   const old=node.querySelector('.contact-badge'); if(old) old.remove();
   const contacts=(node?node._contacts:[])||[];
-  const visible=contacts.filter(c=> (c && (c.first||c.last||c.phone)));
-  if(visible.length===0) return;
+  const visible=contacts.filter(c=> (c && (c.first||c.last||c.phone||c.email)));
+  if(visible.length===0){ refreshContactsOverview(); return; }
   const badge=document.createElement('div'); badge.className='contact-badge'; badge.textContent='📇';
   badge.title=visible.length===1 ? '1 contact' : `${visible.length} contacts`;
   badge.setAttribute('aria-label', badge.title);
   badge.addEventListener('pointerdown',e=>e.stopPropagation());
   badge.addEventListener('click',e=>{ e.stopPropagation(); openContactModal(node); });
   node.appendChild(badge);
+  refreshContactsOverview();
 }
 function resetContactForm(){
   if(contactLast) contactLast.value='';
   if(contactFirst) contactFirst.value='';
   if(contactPhone) contactPhone.value='';
+  if(contactEmail) contactEmail.value='';
   editingContactId=null;
   if(contactSave) contactSave.textContent=contactSaveDefaultText;
 }
@@ -1068,10 +1096,14 @@ function renderContactList(){
     const rawFirst=contact.first||'';
     const rawLast=contact.last||'';
     const rawPhone=contact.phone||'';
+    const rawEmail=contact.email||'';
     const displayName=escapeHtml([rawFirst.trim(), rawLast.trim()].filter(Boolean).join(' ') || 'Contact');
     const safeLast=escapeHtml(rawLast||'—');
     const safeFirst=escapeHtml(rawFirst||'—');
     const safePhone=escapeHtml(rawPhone||'—');
+    const safeEmail=escapeHtml(rawEmail||'—');
+    const emailHref=rawEmail.replace(/[^A-Za-z0-9@._+\-]/g,'');
+    const emailContent=rawEmail ? `<a href="mailto:${emailHref}">${safeEmail}</a>` : '—';
     const item=document.createElement('div'); item.className='contact-item';
     item.innerHTML=`
       <div class="contact-row">
@@ -1081,6 +1113,7 @@ function renderContactList(){
             <span><strong>Nom :</strong> ${safeLast}</span>
             <span><strong>Prénom :</strong> ${safeFirst}</span>
             <span><strong>Tél. :</strong> ${safePhone}</span>
+            <span><strong>Mail :</strong> ${emailContent}</span>
           </div>
         </div>
         <div class="contact-actions">
@@ -1096,6 +1129,7 @@ function renderContactList(){
       if(contactLast) contactLast.value=rawLast;
       if(contactFirst) contactFirst.value=rawFirst;
       if(contactPhone) contactPhone.value=rawPhone;
+      if(contactEmail) contactEmail.value=rawEmail;
       if(contactSave) contactSave.textContent='Mettre à jour';
       (contactLast||contactFirst)?.focus?.();
     });
@@ -1106,6 +1140,98 @@ function renderContactList(){
     });
     contactList.appendChild(item);
   });
+}
+function refreshContactsOverview(){
+  if(!contactsModal) return;
+  if(isModalOpen(contactsModal)) renderGlobalContactsList();
+}
+function renderGlobalContactsList(){
+  if(!contactsContainer) return;
+  contactsContainer.innerHTML='';
+  const nodes=Array.from(world.querySelectorAll('.node'));
+  const groups=[];
+  nodes.forEach(node=>{
+    ensureObjArrays(node);
+    const contacts=(node._contacts||[]).filter(c=>c && (c.first||c.last||c.phone||c.email));
+    if(contacts.length===0) return;
+    groups.push({ node, name:getNodeName(node), contacts:[...contacts] });
+  });
+  if(groups.length===0){
+    const empty=document.createElement('div'); empty.className='contact-item'; empty.textContent='Aucun contact enregistré.';
+    contactsContainer.appendChild(empty);
+    return;
+  }
+  const collator=new Intl.Collator('fr',{sensitivity:'base',ignorePunctuation:true});
+  groups.sort((a,b)=>collator.compare(a.name,b.name));
+  groups.forEach(group=>{
+    group.contacts.sort((a,b)=>{
+      const lastA=(a.last||'').toLowerCase();
+      const lastB=(b.last||'').toLowerCase();
+      const cmpLast=collator.compare(lastA,lastB);
+      if(cmpLast!==0) return cmpLast;
+      const firstA=(a.first||'').toLowerCase();
+      const firstB=(b.first||'').toLowerCase();
+      return collator.compare(firstA,firstB);
+    });
+    const wrapper=document.createElement('div'); wrapper.className='contact-item contact-group';
+    const header=document.createElement('div'); header.className='contact-group-header';
+    const nameEl=document.createElement('div'); nameEl.className='contact-group-name'; nameEl.textContent=group.name;
+    const countEl=document.createElement('span'); countEl.className='contact-group-count';
+    countEl.textContent=group.contacts.length===1 ? '1 contact' : `${group.contacts.length} contacts`;
+    header.appendChild(nameEl); header.appendChild(countEl);
+    const list=document.createElement('div'); list.className='contact-group-list';
+    group.contacts.forEach(contact=>{
+      const entry=document.createElement('div'); entry.className='contact-entry';
+      const name=document.createElement('div'); name.className='contact-entry-name';
+      name.textContent=[contact.first||'', contact.last||''].map(v=>v.trim()).filter(Boolean).join(' ') || 'Contact';
+      const meta=document.createElement('div'); meta.className='contact-meta';
+      meta.appendChild(buildMetaSpan('Nom', contact.last));
+      meta.appendChild(buildMetaSpan('Prénom', contact.first));
+      meta.appendChild(buildMetaSpan('Tél.', contact.phone, 'tel'));
+      meta.appendChild(buildMetaSpan('Mail', contact.email, 'mail'));
+      entry.appendChild(name);
+      entry.appendChild(meta);
+      list.appendChild(entry);
+    });
+    wrapper.appendChild(header);
+    wrapper.appendChild(list);
+    contactsContainer.appendChild(wrapper);
+  });
+
+  function buildMetaSpan(label, value, type){
+    const span=document.createElement('span');
+    const strong=document.createElement('strong'); strong.textContent=`${label} :`;
+    span.appendChild(strong);
+    span.append(' ');
+    const clean=(value||'').trim();
+    if(type==='tel' && clean){
+      const telLink=document.createElement('a');
+      const telHref=clean.replace(/[^0-9+#*]/g,'');
+      telLink.href=`tel:${telHref}`;
+      telLink.textContent=clean;
+      span.appendChild(telLink);
+    }else if(type==='mail' && clean){
+      const mailLink=document.createElement('a');
+      const mailHref=clean.replace(/[^A-Za-z0-9@._+\-]/g,'');
+      mailLink.href=`mailto:${mailHref}`;
+      mailLink.textContent=clean;
+      span.appendChild(mailLink);
+    }else{
+      span.append(clean || '—');
+    }
+    return span;
+  }
+}
+function openContactsModal(){
+  if(!contactsModal) return;
+  renderGlobalContactsList();
+  contactsModal.style.display='flex';
+  contactsModal.setAttribute('aria-hidden','false');
+}
+function closeContactsModal(){
+  if(!contactsModal) return;
+  contactsModal.style.display='none';
+  contactsModal.setAttribute('aria-hidden','true');
 }
 function deleteContactFromNode(node, contactId){
   if(!node) return;
@@ -1138,6 +1264,7 @@ function ensureObjArrays(node){
     c.last=typeof c.last==='string'?c.last.trim(): (c.last?String(c.last).trim():'');
     c.first=typeof c.first==='string'?c.first.trim(): (c.first?String(c.first).trim():'');
     c.phone=typeof c.phone==='string'?c.phone.trim(): (c.phone?String(c.phone).trim():'');
+    c.email=typeof c.email==='string'?c.email.trim(): (c.email?String(c.email).trim():'');
   });
   node._objectives.forEach(o=>{
     if(!Array.isArray(o.taskIds)) o.taskIds=[];
@@ -1593,16 +1720,17 @@ if(contactSave){
     const last=(contactLast?.value||'').trim();
     const first=(contactFirst?.value||'').trim();
     const phone=(contactPhone?.value||'').trim();
+    const email=(contactEmail?.value||'').trim();
     if(!last){ alert('Veuillez saisir un nom.'); return; }
     if(!first){ alert('Veuillez saisir un prénom.'); return; }
-    if(!phone){ alert('Veuillez saisir un numéro de téléphone.'); return; }
+    if(!phone && !email){ alert('Veuillez saisir un numéro de téléphone ou un e-mail.'); return; }
     ensureObjArrays(contactNode);
     if(editingContactId){
       const existing=contactNode._contacts.find(c=>c.id===editingContactId);
-      if(existing){ existing.last=last; existing.first=first; existing.phone=phone; }
-      else{ contactNode._contacts.push({ id:generateContactId(), last, first, phone }); }
+      if(existing){ existing.last=last; existing.first=first; existing.phone=phone; existing.email=email; }
+      else{ contactNode._contacts.push({ id:generateContactId(), last, first, phone, email }); }
     }else{
-      contactNode._contacts.push({ id:generateContactId(), last, first, phone });
+      contactNode._contacts.push({ id:generateContactId(), last, first, phone, email });
     }
     saveState();
     updateContactBadge(contactNode);
@@ -1613,6 +1741,9 @@ if(contactSave){
 }
 contactCancel?.addEventListener('click', closeContactModal);
 contactModal?.addEventListener('click',(e)=>{ if(e.target===contactModal) closeContactModal(); });
+contactsBtn?.addEventListener('click', openContactsModal);
+contactsClose?.addEventListener('click', closeContactsModal);
+contactsModal?.addEventListener('click',(e)=>{ if(e.target===contactsModal) closeContactsModal(); });
 
 /* ====== Global tasks ====== */
 tasksBtn.addEventListener('click', openTasksListModal);
@@ -2497,7 +2628,7 @@ function buildState(){
     url: n.dataset.url || '',
     tasks: (n._tasks||[]).map(t=>({id:t.id, title:t.title, desc:t.desc, start:t.start||'', end:t.end||'', done: !!t.done, objectiveIds:[...(t.objectiveIds||[])]})),
     objectives: (n._objectives||[]).map(o=>({id:o.id, title:o.title, desc:o.desc, due:o.due||'', taskIds:[...(o.taskIds||[])], completed:!!o.completed, completedAt:o.completedAt||null})),
-    contacts: (n._contacts||[]).map(c=>({ id:c.id, first:c.first||'', last:c.last||'', phone:c.phone||'' }))
+    contacts: (n._contacts||[]).map(c=>({ id:c.id, first:c.first||'', last:c.last||'', phone:c.phone||'', email:c.email||'' }))
   }));
   const edges=Array.from(qLines()).map(l=>({from:l.dataset.from,to:l.dataset.to}));
   return { idCounter, nodes, edges, camera };
@@ -2507,6 +2638,7 @@ function saveState(){
   localStorage.setItem('workspaceState', JSON.stringify(data));
   localStorage.setItem('sphaira:workspaceState:v1', JSON.stringify(data)); /* compat ORIS */
   refreshSidebar();
+  refreshContactsOverview();
 }
 function restoreState(data){
   closeContactModal();
@@ -2527,7 +2659,7 @@ function restoreState(data){
     if(n.url){ node.dataset.url=n.url; }
     node._tasks=Array.isArray(n.tasks) ? n.tasks.map(t=>({ id:t.id, title:t.title, desc:t.desc, start:t.start||'', end:t.end||'', done: !!t.done, objectiveIds: Array.isArray(t.objectiveIds) ? [...t.objectiveIds] : [] })) : [];
     node._objectives=Array.isArray(n.objectives) ? n.objectives.map(o=>({ id:o.id, title:o.title, desc:o.desc, due:o.due||'', taskIds:[...(o.taskIds||[])], completed: !!o.completed, completedAt: o.completedAt||null })) : [];
-    node._contacts=Array.isArray(n.contacts) ? n.contacts.map(c=>({ id:c.id||generateContactId(), first:c.first||'', last:c.last||'', phone:c.phone||'' })) : [];
+    node._contacts=Array.isArray(n.contacts) ? n.contacts.map(c=>({ id:c.id||generateContactId(), first:c.first||'', last:c.last||'', phone:c.phone||'', email:c.email||'' })) : [];
     syncAllTaskObjectiveLinks(node);
     fitLabelToNode(node); updateUrlBadge(node); updateTaskBadge(node); updateObjectiveBadge(node); updateContactBadge(node); byId[n.id]=node;
   });
